@@ -1,5 +1,5 @@
 *.wav
-*.png
+#*.png
 z*
 
 # Byte-compiled / optimized / DLL files

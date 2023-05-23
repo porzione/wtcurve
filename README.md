@@ -1,19 +1,22 @@
 # wtcurve
-Generate morphing exponential wavetables for audio synthesis 
 
-32-bit float wav wavetables tested with Linux versions of Surge XT, Bitwig Grid/Polymer, u-he Hive 2, Vital software synthesizers. 
+Generate morphing exponential wavetables for audio synthesis
+
+32-bit float wav wavetables tested with Linux versions of Surge XT, Bitwig Grid/Polymer, u-he Hive 2, Vital software synthesizers.
 
 Currently, only one waveform is supported, a corrected exponential function with a plot reflected on the x and y axes with a square central part. This is a very typical waveform for modern EDM/Psytrance bass sound. Script can plot the graph as well.
+
+![Default waveforms](images/Figure_1.png)
 
 Defaults: 32 bit float wav, 256 waveforms, 2048 samples.
 
 Requirements: python 3.x with numpy, matplotlib, soundfile.
 
-Surely there are bugs here. 
+Surely there are bugs here.
 
 We have help:
 
-```
+```text
 $ ./wtcurve --help
 usage: wtcurve [-h] [-w NUM_WAVEFORMS] [-s {8,16,32,64,128,256,512,1024,2048}] [--bits {16,32}] [-m MID_WIDTH_PCT] [-o MID_HOFFSET] [-e {2,3,4,5,6,7,8,9}] [--graph] [--wav] [-D]
 
@@ -29,8 +32,8 @@ options:
   --graph               Plot graph
   --wav                 Save wav
   -D                    Debug
-  ```
-  
-  Try to play with `-m` from 20 to 50, `-o` from 20 to 70, `-e` with indicated range. Check the graph with `--graph`, it will show first and last frames.
-  
-  ## to be continued
+```
+
+Try to play with `-m` from 20 to 50, `-o` from 20 to 70, `-e` with indicated range. Check the graph with `--graph`, it will show first and last frames.
+
+## to be continued
