@@ -31,6 +31,6 @@ options:
   -D                    Debug
   ```
   
-  Try to play with with `-m` from 20 to 50, `-o` from 20 to 70, `-e` with indicated range. Check the graph with `--graph` - it will show first and last frame.
+  Try to play with `-m` from 20 to 50, `-o` from 20 to 70, `-e` with indicated range. Check the graph with `--graph`, it will show first and last frames.
   
   ## to be continued
