@@ -8,6 +8,7 @@ import os
 
 SAMPLE_RATE = 44100
 
+
 def add_chunk(src_name, dst_name, chunk):
     chid, size = struct.unpack('<4sI', chunk[:8])
     print(f'New chunk ID: {chid}, size: {size}, len: {len(chunk)}')
@@ -35,7 +36,7 @@ def add_chunk(src_name, dst_name, chunk):
 
             except struct.error:
                 # If struct.unpack fails, it means we've run out of data, so we break the loop
-                #print(f'ERR/END: ID: {chid}, size: {size}')
+                # print(f'ERR/END: ID: {chid}, size: {size}')
                 break
 
     dst_size = os.fstat(dst.fileno()).st_size
@@ -44,17 +45,18 @@ def add_chunk(src_name, dst_name, chunk):
     dst.write((dst_size-8).to_bytes(4, 'little'))
     dst.close()
 
+
 class Wav:
 
-    def __init__(self, waveforms, bitwidth):
+    def __init__(self, waveforms, bitwidth, basename):
 
         self.waveforms = waveforms
         self.bitwidth = bitwidth
+        self.basename = basename
         self.num_waveforms = len(self.waveforms)
         self.num_samples = len(self.waveforms[0])
         print(f'Wav num_waveforms: {self.num_waveforms}, num_samples: {self.num_samples}')
 
-    # TODO: filename format with %%
     def save(self):
 
         # Normalize the frames to the range of -1 to 1
@@ -70,10 +72,10 @@ class Wav:
             wav_type = 'PCM_16'
 
         else:
-            print(f'wrong bitwidth: {bitwidth}')
+            print(f'wrong bitwidth: {self.bitwidth}')
             exit()
 
-        sf.write(f'sf_{self.bitwidth}_{self.num_samples}.wav',
+        sf.write(f'wtc_{self.basename}.wav',
                  normalized_frames_typed.flatten(),
                  SAMPLE_RATE,
                  wav_type)
@@ -90,11 +92,11 @@ class Wav:
         newck.extend(b'Funny string')
         #      TODO: ^^^ string_var.encode("utf-8")
         newck.extend(b'\x00' * (272-len(newck)+8))
-        #print(len(newck); hexdump(newck)
+        # print(len(newck); hexdump(newck)
 
         add_chunk(
-            f'sf_{self.bitwidth}_{self.num_samples}.wav',
-            f'sf_{self.bitwidth}_{self.num_samples}_uhe.wav',
+            f'wtc_{self.basename}.wav',
+            f'wtcu_{self.basename}.wav',
             newck
         )
 
@@ -103,10 +105,9 @@ class Wav:
         newck.extend((8).to_bytes(4, 'little'))
         newck.extend((1).to_bytes(4, 'little'))
         newck.extend(self.num_samples.to_bytes(4, 'little'))
-        #print(len(newck); hexdump(newck)
+        # print(len(newck); hexdump(newck)
         add_chunk(
-            f'sf_{self.bitwidth}_{self.num_samples}.wav',
-            f'sf_{self.bitwidth}_{self.num_samples}_surge.wav',
+            f'wtc_{self.basename}.wav',
+            f'wtcs_{self.basename}.wav',
             newck
         )
-
