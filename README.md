@@ -5,7 +5,7 @@ Generate morphing exponential wavetables for audio synthesis
 
 Currently, only one waveform is supported, a corrected exponential function with a plot reflected on the x and y axes with a square central part. This is a very typical waveform for modern EDM/Psytrance bass sound. Script can plot the graph as well.
 
-Defaults: 32 bit float wav, 256 waveforms, 2048 files.
+Defaults: 32 bit float wav, 256 waveforms, 2048 samples.
 
 Requirements: python 3.x with numpy, matplotlib, soundfile.
 
