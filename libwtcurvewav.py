@@ -42,7 +42,7 @@ def add_chunk(src_name, dst_name, chunk):
     dst_size = os.fstat(dst.fileno()).st_size
     print(dst_size)
     dst.seek(4)
-    dst.write((dst_size-8).to_bytes(4, 'little'))
+    dst.write((dst_size - 8).to_bytes(4, 'little'))
     dst.close()
 
 
@@ -55,7 +55,8 @@ class Wav:
         self.basename = basename
         self.num_waveforms = len(self.waveforms)
         self.num_samples = len(self.waveforms[0])
-        print(f'Wav num_waveforms: {self.num_waveforms}, num_samples: {self.num_samples}')
+        print(
+            f'Wav num_waveforms: {self.num_waveforms}, num_samples: {self.num_samples}')
 
     def save(self):
 
@@ -68,7 +69,10 @@ class Wav:
 
         elif self.bitwidth == 16:
             # Convert frames to 16-bit signed integer format
-            normalized_frames_typed = (normalized_frames * 32767).astype(np.int16)
+            normalized_frames_typed = (
+                normalized_frames *
+                32767).astype(
+                np.int16)
             wav_type = 'PCM_16'
 
         else:
@@ -91,7 +95,7 @@ class Wav:
         newck.extend(b'\x00\x00\x00\x08\x00\x00\x00\x00\x00\x00')
         newck.extend(b'Funny string')
         #      TODO: ^^^ string_var.encode("utf-8")
-        newck.extend(b'\x00' * (272-len(newck)+8))
+        newck.extend(b'\x00' * (272 - len(newck) + 8))
         # print(len(newck); hexdump(newck)
 
         add_chunk(

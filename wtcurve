@@ -7,13 +7,13 @@ import libwtcurvewav
 from argparse import ArgumentParser
 
 DEFAULTS = {
-        "num_waveforms": 256,  # aka frames
-        "num_samples": 2048,
-        "bitwidth": 32,
-        "exponent": 5,
-        "mid_width_pct": 20,
-        "mid_hoffset": 20
-        }
+    "num_waveforms": 256,  # aka frames
+    "num_samples": 2048,
+    "bitwidth": 32,
+    "exponent": 5,
+    "mid_width_pct": 20,
+    "mid_hoffset": 20
+}
 
 
 def debug(msg):
@@ -25,7 +25,8 @@ def debug(msg):
 def curve(x1, y1, x2, y2, num_points):
     debug(f'curve: {x1} {y1} {x2} {y2} {num_points}')
     x = np.linspace(x1, x2, num_points)
-    y = y1 + (y2 - y1) * (np.exp(args.exponent * (x - x1)) - 1) / (np.exp(args.exponent * (x2 - x1)) - 1)
+    y = y1 + (y2 - y1) * (np.exp(args.exponent * (x - x1)) - 1) / \
+        (np.exp(args.exponent * (x2 - x1)) - 1)
     if x1 < 0:
         y_rotated = y2 - (y - y1)
         return y_rotated[::-1]
@@ -44,26 +45,67 @@ def line(x1, y1, x2, y2, num_points):
 
 
 argp = ArgumentParser()
-argp.add_argument("-w",
-                  required=False, dest="num_waveforms", type=int, default=DEFAULTS['num_waveforms'],
-                  help="Number of frames/waveforms (%(default)s)")
-argp.add_argument("-s",
-                  required=False, dest="num_samples", type=int, default=DEFAULTS['num_samples'],
-                  choices=np.power(2, np.arange(3, 12)),
-                  help="Number of samples in one frame (%(default)s)")
-argp.add_argument("--bits",
-                  required=False, dest="bitwidth", type=int, default=DEFAULTS['bitwidth'], choices=[16, 32],
-                  help="Bits (%(default)s)")
-argp.add_argument("-m",
-                  required=False, dest="mid_width_pct", type=int, default=DEFAULTS['mid_width_pct'],
-                  help="Percents in middle part (%(default)s)")
-argp.add_argument("-o",
-                  required=False, dest="mid_hoffset", type=int, default=DEFAULTS['mid_hoffset'],
-                  help="Percents of middle horizontal offset from y=0 (%(default)s)")
-argp.add_argument("-e",
-                  required=False, dest="exponent", type=int, default=DEFAULTS['exponent'], choices=range(2, 10),
-                  help="Exponent of curve (%(default)s)")
-argp.add_argument("--graph", action='store_true', dest="graph", help="Plot graph")
+argp.add_argument(
+    "-w",
+    required=False,
+    dest="num_waveforms",
+    type=int,
+    default=DEFAULTS['num_waveforms'],
+    help="Number of frames/waveforms (%(default)s)")
+argp.add_argument(
+    "-s",
+    required=False,
+    dest="num_samples",
+    type=int,
+    default=DEFAULTS['num_samples'],
+    choices=np.power(
+        2,
+        np.arange(
+            3,
+            12)),
+    help="Number of samples in one frame (%(default)s)")
+argp.add_argument(
+    "--bits",
+    required=False,
+    dest="bitwidth",
+    type=int,
+    default=DEFAULTS['bitwidth'],
+    choices=[
+        16,
+        32],
+    help="Bits (%(default)s)")
+argp.add_argument(
+    "-m",
+    required=False,
+    dest="mid_width_pct",
+    type=int,
+    default=DEFAULTS['mid_width_pct'],
+    help="Percents in middle part (%(default)s)")
+argp.add_argument(
+    "-o",
+    required=False,
+    dest="mid_hoffset",
+    type=int,
+    default=DEFAULTS['mid_hoffset'],
+    help="Percents of middle horizontal offset from y=0 (%(default)s)")
+argp.add_argument(
+    "-e",
+    required=False,
+    dest="exponent",
+    type=int,
+    default=DEFAULTS['exponent'],
+    choices=range(
+        2,
+        10),
+    help="Exponent of curve (%(default)s)")
+argp.add_argument(
+    "--graph",
+    action='store_true',
+    dest="graph",
+    help="Plot graph")
+argp.add_argument("--dpi",
+                  required=False, dest="dpi", type=int,
+                  help="Graph DPI")
 argp.add_argument("--wav", action='store_true', dest="wav", help="Save wav")
 argp.add_argument("-D", action='store_true', dest="debug", help="Debug")
 args = argp.parse_args()
@@ -71,11 +113,12 @@ args = argp.parse_args()
 mid_samples = int((args.mid_width_pct / 100) * args.num_samples)
 if mid_samples % 2 != 0:
     mid_samples -= 1
-debug(f'mid_samples: {mid_samples} ({args.mid_width_pct}% of {args.num_samples})')
+debug(
+    f'mid_samples: {mid_samples} ({args.mid_width_pct}% of {args.num_samples})')
 
 mid_widths = np.zeros(args.num_waveforms, dtype=int)
 for i in range(args.num_waveforms):
-    c = round(mid_samples*i/(args.num_waveforms-1))
+    c = round(mid_samples * i / (args.num_waveforms - 1))
     if c % 2 != 0:
         c -= 1
     mid_widths[i] = c
@@ -92,8 +135,9 @@ for i in range(args.num_waveforms):
     cx = xoffsets[i]
     debug(f'cx: {cx}')
 
-    curve_len = args.num_samples//2 - mid_widths[i]//2
-    debug(f'i: {i} curve_len: {curve_len}, mw: {mid_widths[i]}, sum: {curve_len*2+mid_widths[i]}')
+    curve_len = args.num_samples // 2 - mid_widths[i] // 2
+    debug(
+        f'i: {i} curve_len: {curve_len}, mw: {mid_widths[i]}, sum: {curve_len*2+mid_widths[i]}')
 
     ya1 = curve(-1, -1, -cx, -middle_hoffset, curve_len)
     debug(f'ya1: {ya1} ({len(ya1)})')
@@ -113,6 +157,9 @@ if args.debug:
     exit()
 
 if args.graph:
+    if isinstance(args.dpi, int):
+        plt.rcParams['figure.dpi'] = args.dpi
+
     time = np.arange(0, args.num_samples)
     # for graph in wf:
     #     plt.plot(time, graph)
@@ -120,15 +167,19 @@ if args.graph:
     plt.plot(wf[-1], label='last')
     plt.xlabel('X/Sample')
     plt.ylabel('Y/Amplitude')
-    plt.title(f'Exponential curve e={args.exponent} m={args.mid_width_pct}% s={args.num_samples} w={args.num_waveforms}')
+    plt.title(
+        f'Exponential curve e={args.exponent} m={args.mid_width_pct}% s={args.num_samples} w={args.num_waveforms}')
     plt.grid(True)
     plt.legend()
     plt.show()
 
 if args.wav:
-    bn = '%sm_%sh_%se_%ss_%sw_%sb' % (
-            args.mid_width_pct, args.mid_hoffset, args.exponent, args.num_samples, args.num_waveforms, args.bitwidth
-            )
+    bn = '%sm_%sh_%se_%ss_%sw_%sb' % (args.mid_width_pct,
+                                      args.mid_hoffset,
+                                      args.exponent,
+                                      args.num_samples,
+                                      args.num_waveforms,
+                                      args.bitwidth)
     wav = libwtcurvewav.Wav(wf, args.bitwidth, bn)
     wav.save()
     wav.copy_surge()
