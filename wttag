@@ -1,0 +1,149 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+from argparse import ArgumentParser
+import numpy as np
+import struct
+import os
+
+TAGS = {
+    'uhe': b'uhWT',
+    'surge': b'srge',
+    'clm': b'clm '
+}
+
+
+class Chunk:
+
+    DESCRIPTION = 'github.com/porzione/wtcurve'
+
+    def __init__(self, num_waveforms, num_samples):
+
+        self.num_waveforms = num_waveforms
+        self.num_samples = num_samples
+        self.description = '%s w:%s s:%s' % (
+                Chunk.DESCRIPTION,
+                num_waveforms,
+                num_samples
+        )
+
+    def mk_uhe(self):
+        chlen = 272
+        chunk = bytearray(chlen+8)  # header
+        chunk[:4] = TAGS['uhe']
+        chunk[4:8] = struct.pack('<I', chlen)
+        chunk[8:12] = b'\x00' * 4
+        chunk[12:14] = struct.pack('<H', self.num_waveforms)
+        chunk[17] = 8  # magick number
+        bdescr = self.description.encode('ascii')
+        chunk[24:24+len(bdescr)] = bdescr
+        return chunk
+
+    def mk_surge(self):
+        chunk = bytearray(16)
+        chunk[:4]    = TAGS['surge']
+        chunk[4:8]   = struct.pack('<I', 8)
+        chunk[8:12]  = struct.pack('<I', 1)
+        chunk[12:16] = struct.pack('<I', self.num_samples)
+        return chunk
+
+    def mk_clm(self):
+        ck_id = TAGS['clm']
+        ck_da = bytearray(f'<!>{self.num_samples} 10000000 {self.description}', 'ascii')[:48]
+        ck_sz = len(ck_da)
+        if ck_sz % 2 != 0:
+            ck_da += b'\0'
+        chunk = ck_id + struct.pack('<I', ck_sz) + ck_da
+        return chunk
+
+    # TODO: def mk_crve(self)
+
+
+argp = ArgumentParser()
+argp.add_argument("-w", dest="num_waveforms", type=int,
+                  help="Number of frames/waveforms")
+argp.add_argument("-s", required=True, dest="num_samples", type=int,
+                  choices=np.power(2, np.arange(3, 13)), help="Number of samples in one frame")
+argp.add_argument("--bits", dest="bitwidth", type=int, choices=[16, 32], help="Bit width")
+argp.add_argument("--surge", action='store_true', dest="tag_surge", help="Add Surge tag")
+argp.add_argument("--uhe", action='store_true', dest="tag_uhe", help="Add u-he (e.g. Hive) tag")
+argp.add_argument("--clm", action='store_true', dest="tag_clm", help="Add clm (e.g. Serum) tag")
+argp.add_argument("-i", required=True, dest="src_file", help="Source file")
+argp.add_argument("-o", required=True, dest="dst_file", help="Output file")
+argp.add_argument("--of", action='store_true', dest="ov_file", help="Overwrite output file")
+argp.add_argument("--ot", action='store_true', dest="ov_tags", help="Overwrite tags")
+argp.add_argument("-m", action='store_true', dest="mkdir", help="Make destination directories")
+argp.add_argument("-a", action='store_true', dest="all_tags", help="Do not skip extra tags")
+args = argp.parse_args()
+
+if not os.path.isfile(args.src_file):
+    print(f'Source file "{args.src_file}" not exists or not file.')
+    exit(1)
+
+if os.path.isfile(args.dst_file) and not args.ov_file:
+    print(f'Destination file "{args.dst_file}" exists.')
+    exit(2)
+
+if os.path.isfile(args.dst_file) and os.path.samefile(args.src_file, args.dst_file):
+    print('Source and destination are the same file')
+    exit(3)
+
+dst_path = os.path.dirname(args.dst_file)
+if not os.path.isdir(dst_path) and args.mkdir:
+    print(f'mkdir: {dst_path}')
+    os.makedirs(dst_path, mode=0o755)
+
+lch = Chunk(args.num_waveforms, args.num_samples)
+
+with open(args.src_file, 'rb') as src:
+    # read/write riff
+    data = src.read(12)
+    riff, size, fformat = struct.unpack('<4sI4s', data)
+    print(f'RIFF header: {riff}, size: {size}, format: {fformat}')
+    dst = open(args.dst_file, 'wb')
+    dst.write(data)
+    found_chunks = []
+    while True:
+        try:
+            head = src.read(8)
+            chid, size = struct.unpack('<4sI', head)
+            found_chunks.append(chid)
+            print(f'found_chunks: {found_chunks}')
+            print(f'chunk id: {chid}, size: {size}')
+            data = src.read(size)
+            print(f'read size: {len(data)}')
+            # TODO: use skip tag arg
+            if chid in [b'PEAK', b'fact']:
+                continue
+            elif chid == b'data':
+                # write new chunks before data
+                if args.tag_surge:
+                    if TAGS['surge'] in found_chunks and not args.ov_tags:
+                        print('skip surge')
+                    else:
+                        print('write surge')
+                        dst.write(lch.mk_surge())
+                if args.tag_uhe:
+                    if TAGS['uhe'] in found_chunks and not args.ov_tags:
+                        print('skip uhe')
+                    else:
+                        print('write uhe')
+                        dst.write(lch.mk_uhe())
+                if args.tag_clm:
+                    if TAGS['clm'] in found_chunks and not args.ov_tags:
+                        print('skip clm')
+                    else:
+                        print('write clm')
+                        dst.write(lch.mk_clm())
+            dst.write(head)
+            dst.write(data)
+
+        except struct.error:
+            break
+
+    # update size in header
+    dst_size = os.fstat(dst.fileno()).st_size
+    print(dst_size)
+    dst.seek(4)
+    dst.write((dst_size - 8).to_bytes(4, 'little'))
+    dst.close()
