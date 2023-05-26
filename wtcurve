@@ -74,10 +74,14 @@ argp.add_argument(
     help="Exponent of curve (%(default)s)")
 argp.add_argument(
     "--graph", action='store_true', dest="graph", help="Plot graph")
-argp.add_argument("--dpi", dest="dpi", type=int, help="Graph DPI")
 argp.add_argument("--wav", action='store_true', dest="wav", help="Save wav")
+argp.add_argument("--dpi", dest="dpi", type=int, help="Graph DPI")
 argp.add_argument("-D", action='store_true', dest="debug", help="Debug")
 args = argp.parse_args()
+
+if not (args.wav or args.graph or args.debug):
+    print(f'What to do - wav or graph?\n\n{argp.format_help()}')
+    exit()
 
 mid_samples = int((args.mid_width_pct / 100) * args.num_samples)
 if mid_samples % 2 != 0:
