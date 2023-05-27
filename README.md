@@ -6,9 +6,14 @@ I have tested the 32-bit float WAV wavetables with the Linux versions of Surge X
 
 Currently, the tool supports the generation of a single waveform, which can be defined either as a modified exponential function or a Bezier curve. The function's plot is reflected on both the x and y axes, featuring a square central part. This waveform is commonly used in modern EDM/Psytrance bass sounds. The script also has the capability to generate a visual graph of the waveform. Bezier has slightly different default values (WIP). The waveform transformation occurs by adjusting the tilt of the center line from a vertical position to a customized angle, where the center line occupies the percentage of the total width specified by the `-m` option.
 
-![Default exponential waveforms](images/graph_exp.png)
-![Default Bézier waveforms](images/graph_bezier.png)
+Exponential
+![Exponential waveforms](images/graph_exp.png)
 
+Bézier
+![Bézier waveforms](images/graph_bezier.png)
+
+Bitwig 3D previews of wavetables that are generated using various parameters
+![Bitwig previews](images/bitwig_previews.png)
 
 Defaults: 32 bit float WAV, 256 waveforms, 2048 samples.
 
