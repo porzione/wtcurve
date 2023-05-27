@@ -10,11 +10,12 @@ DEFAULTS = {
     "num_waveforms": 256,
     "num_samples": 2048,
     "bitwidth": 32,
+}
+EXP_DEFAULTS = {
     "exponent": 5,
     "mid_width_pct": 20,
     "mid_hoffset": 20
 }
-
 BEZIER_DEFAULTS = {
     "mid_width_pct": 34,
     "mid_hoffset": 25
@@ -80,15 +81,13 @@ argp.add_argument(
     help="Bits width (%(default)s)")
 argp.add_argument(
     "-m", dest="mid_width_pct", type=int,
-    default=DEFAULTS['mid_width_pct'],
     help="Percents in middle part (%(default)s)")
 argp.add_argument(
     "-o", dest="mid_hoffset", type=int,
-    default=DEFAULTS['mid_hoffset'],
     help="Percents of middle horizontal offset from y=0 (%(default)s)")
 argp.add_argument(
     "-e", dest="exp", type=int,
-    default=DEFAULTS['exponent'],
+    default=EXP_DEFAULTS['exponent'],
     choices=range(2, 10),
     help="Exponent of curve (%(default)s)")
 argp.add_argument(
@@ -112,17 +111,21 @@ if not (args.wav or args.graph or args.debug):
 if args.bezier:
     curve_fn = bezier_curve
     title = 'Bézier'
-    args.mid_width_pct = BEZIER_DEFAULTS.get(
-        'mid_width_pct', args.mid_width_pct)
-    args.mid_hoffset = BEZIER_DEFAULTS.get('mid_hoffset', args.mid_hoffset)
+    if args.mid_width_pct == None:
+        args.mid_width_pct = BEZIER_DEFAULTS.get('mid_width_pct')
+    if args.mid_hoffset == None:
+        args.mid_hoffset = BEZIER_DEFAULTS.get('mid_hoffset')
 else:
     curve_fn = exp_curve
     title = 'Exponential'
+    if args.mid_width_pct == None:
+        args.mid_width_pct = EXP_DEFAULTS.get('mid_width_pct')
+    if args.mid_hoffset == None:
+        args.mid_hoffset = EXP_DEFAULTS.get('mid_hoffset')
 
 mid_samples = int((args.mid_width_pct / 100) * args.num_samples)
 mid_samples -= mid_samples % 2
-debug(
-    f'mid_samples: {mid_samples} ({args.mid_width_pct}% of {args.num_samples})')
+debug(f'mid_samples: {mid_samples} ({args.mid_width_pct}% of {args.num_samples})')
 
 mid_widths = np.round(mid_samples * np.arange(args.num_waveforms) /
                       (args.num_waveforms - 1)).astype(int)
@@ -182,7 +185,7 @@ if args.graph:
     plt.show()
 
 if args.wav:
-    bn = '%sm_%sh_%se_%ss_%sw_%sb' % (args.mid_width_pct,
+    bn = '%dm_%dh_%de_%ds_%dw_%db' % (args.mid_width_pct,
                                       args.mid_hoffset,
                                       args.exp,
                                       args.num_samples,
