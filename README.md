@@ -4,9 +4,11 @@ Tool for generating morphing wavetables used in audio synthesis.
 
 I have tested the 32-bit float WAV wavetables with the Linux versions of Surge XT, Bitwig Grid/Polymer, u-he Hive 2, and the Vital software synthesizers.
 
-Currently, the software supports only one waveform, which is a modified exponential function. The function's plot is reflected on both the x and y axes, featuring a square central part. This waveform is commonly used in modern EDM/Psytrance bass sounds. The script also has the capability to generate a visual graph of the waveform
+Currently, the tool supports the generation of a single waveform, which can be defined either as a modified exponential function or a Bezier curve. The function's plot is reflected on both the x and y axes, featuring a square central part. This waveform is commonly used in modern EDM/Psytrance bass sounds. The script also has the capability to generate a visual graph of the waveform. Bezier has slightly different default values (WIP). The waveform transformation occurs by adjusting the tilt of the center line from a vertical position to a customized angle, where the center line occupies the percentage of the total width specified by the `-m` option.
 
-![Default waveforms](images/Figure_1.png)
+![Default exponential waveforms](images/graph_exp.png)
+![Default Bézier waveforms](images/graph_bezier.png)
+
 
 Defaults: 32 bit float WAV, 256 waveforms, 2048 samples.
 
@@ -17,8 +19,9 @@ Surely there are bugs here.
 We have help:
 
 ```text
-wtcurve --help
-usage: wtcurve [-h] [-w NUM_WAVEFORMS] [-s {16,32,64,128,256,512,1024,2048,4096}] [--bits {16,32}] [-m MID_WIDTH_PCT] [-o MID_HOFFSET] [-e {2,3,4,5,6,7,8,9}] [--graph] [--dpi DPI] [--wav] [-D]
+$ wtcurve --help
+
+usage: wtcurve [-h] [-w NUM_WAVEFORMS] [-s {16,32,64,128,256,512,1024,2048,4096}] [--bits {16,32}] [-m MID_WIDTH_PCT] [-o MID_HOFFSET] [-e {2,3,4,5,6,7,8,9}] [-B] [--graph] [--wav] [--dpi DPI] [-D]
 
 options:
   -h, --help            show this help message and exit
@@ -29,9 +32,10 @@ options:
   -m MID_WIDTH_PCT      Percents in middle part (20)
   -o MID_HOFFSET        Percents of middle horizontal offset from y=0 (20)
   -e {2,3,4,5,6,7,8,9}  Exponent of curve (5)
+  -B                    Build Bezier curve instead of exponent
   --graph               Plot graph
-  --dpi DPI             Graph DPI
   --wav                 Save wav
+  --dpi DPI             Graph DPI
   -D                    Debug
 ```
 

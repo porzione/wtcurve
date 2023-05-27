@@ -7,12 +7,17 @@ import libwtwav
 from argparse import ArgumentParser
 
 DEFAULTS = {
-    "num_waveforms": 256,  # aka frames
+    "num_waveforms": 256,
     "num_samples": 2048,
     "bitwidth": 32,
     "exponent": 5,
     "mid_width_pct": 20,
     "mid_hoffset": 20
+}
+
+BEZIER_DEFAULTS = {
+    "mid_width_pct": 34,
+    "mid_hoffset": 25
 }
 
 
@@ -21,8 +26,7 @@ def debug(msg):
         print(msg)
 
 
-# exponential
-def curve(x1, y1, x2, y2, num_points):
+def exp_curve(x1, y1, x2, y2, num_points):
     debug(f'curve: {x1} {y1} {x2} {y2} {num_points}')
     x = np.linspace(x1, x2, num_points)
     y = y1 + (y2 - y1) * (np.exp(args.exp * (x - x1)) - 1) / \
@@ -32,6 +36,21 @@ def curve(x1, y1, x2, y2, num_points):
         return y_rotated[::-1]
 
     return y
+
+
+def bezier_curve(x1, y1, x2, y2, num_points):
+    t_values = np.linspace(0.0, 1.0, num_points)
+    # pre-allocate to improve performance
+    x_values = np.zeros(num_points)
+    y_values = np.zeros(num_points)
+    x = np.where(x1 < 0, x1, x2)
+    y = np.where(x1 < 0, y2, y1)
+
+    for i, t in enumerate(t_values):
+        x_values[i] = (1 - t)**2 * x1 + 2 * (1 - t) * t * x + t**2 * x2
+        y_values[i] = (1 - t)**2 * y1 + 2 * (1 - t) * t * y + t**2 * y2
+
+    return y_values
 
 
 def line(x1, y1, x2, y2, num_points):
@@ -73,29 +92,41 @@ argp.add_argument(
     choices=range(2, 10),
     help="Exponent of curve (%(default)s)")
 argp.add_argument(
-    "--graph", action='store_true', dest="graph", help="Plot graph")
-argp.add_argument("--wav", action='store_true', dest="wav", help="Save wav")
-argp.add_argument("--dpi", dest="dpi", type=int, help="Graph DPI")
-argp.add_argument("-D", action='store_true', dest="debug", help="Debug")
+    "-B", action='store_true',
+    dest="bezier", help="Build Bezier curve instead of exponent")
+argp.add_argument(
+    "--graph", action='store_true',
+    dest="graph", help="Plot graph")
+argp.add_argument(
+    "--wav", action='store_true', dest="wav", help="Save wav")
+argp.add_argument(
+    "--dpi", dest="dpi", type=int, help="Graph DPI")
+argp.add_argument(
+    "-D", action='store_true', dest="debug", help="Debug")
 args = argp.parse_args()
 
 if not (args.wav or args.graph or args.debug):
     print(f'What to do - wav or graph?\n\n{argp.format_help()}')
     exit()
 
-mid_samples = int((args.mid_width_pct / 100) * args.num_samples)
-if mid_samples % 2 != 0:
-    mid_samples -= 1
-debug(
-    f'mid_samples: {mid_samples} ({args.mid_width_pct}% of '
-    f'{args.num_samples})')
+if args.bezier:
+    curve_fn = bezier_curve
+    title = 'Bézier'
+    args.mid_width_pct = BEZIER_DEFAULTS.get(
+        'mid_width_pct', args.mid_width_pct)
+    args.mid_hoffset = BEZIER_DEFAULTS.get('mid_hoffset', args.mid_hoffset)
+else:
+    curve_fn = exp_curve
+    title = 'Exponential'
 
-mid_widths = np.zeros(args.num_waveforms, dtype=int)
-for i in range(args.num_waveforms):
-    c = round(mid_samples * i / (args.num_waveforms - 1))
-    if c % 2 != 0:
-        c -= 1
-    mid_widths[i] = c
+mid_samples = int((args.mid_width_pct / 100) * args.num_samples)
+mid_samples -= mid_samples % 2
+debug(
+    f'mid_samples: {mid_samples} ({args.mid_width_pct}% of {args.num_samples})')
+
+mid_widths = np.round(mid_samples * np.arange(args.num_waveforms) /
+                      (args.num_waveforms - 1)).astype(int)
+mid_widths -= mid_widths % 2
 debug(f'mid_widths: {mid_widths}')
 
 middle_hoffset = args.mid_hoffset * 0.01
@@ -114,9 +145,9 @@ for i in range(args.num_waveforms):
         f'i: {i} curve_len: {curve_len}, mw: {mid_widths[i]}, '
         f'sum: {curve_len*2+mid_widths[i]}')
 
-    ya1 = curve(-1, -1, -cx, -middle_hoffset, curve_len)
+    ya1 = curve_fn(-1, -1, -cx, -middle_hoffset, curve_len)
     debug(f'ya1: {ya1} ({len(ya1)})')
-    ya2 = curve(cx, middle_hoffset, 1, 1, curve_len)
+    ya2 = curve_fn(cx, middle_hoffset, 1, 1, curve_len)
     debug(f'ya2: {ya2} ({len(ya2)})')
     ym = line(-cx, -middle_hoffset, cx, middle_hoffset, mid_widths[i])
     debug(f'ym: {ym} ({len(ym)})')
@@ -143,7 +174,8 @@ if args.graph:
     plt.xlabel('X/Sample')
     plt.ylabel('Y/Amplitude')
     plt.title(
-        f'Exponential curve e={args.exp} m={args.mid_width_pct}% '
+        f'{title} curve e={args.exp} m={args.mid_width_pct}% '
+        f'h={args.mid_hoffset}% '
         f's={args.num_samples} w={args.num_waveforms}')
     plt.grid(True)
     plt.legend()
