@@ -3,6 +3,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 import libwtwav
 from argparse import ArgumentParser
 
@@ -10,14 +11,9 @@ DEFAULTS = {
     "num_waveforms": 256,
     "num_samples": 2048,
     "bitwidth": 32,
-}
-EXP_DEFAULTS = {
+    "dpi": 200,
     "exponent": 5,
-    "mid_width_pct": 20,
-    "mid_hoffset": 20
-}
-BEZIER_DEFAULTS = {
-    "mid_width_pct": 34,
+    "mid_width_pct": 40,
     "mid_hoffset": 25
 }
 
@@ -81,13 +77,15 @@ argp.add_argument(
     help="Bits width (%(default)s)")
 argp.add_argument(
     "-m", dest="mid_width_pct", type=int,
+    default=DEFAULTS['mid_width_pct'],
     help="Percents in middle part (%(default)s)")
 argp.add_argument(
     "-o", dest="mid_hoffset", type=int,
+    default=DEFAULTS['mid_hoffset'],
     help="Percents of middle horizontal offset from y=0 (%(default)s)")
 argp.add_argument(
     "-e", dest="exp", type=int,
-    default=EXP_DEFAULTS['exponent'],
+    default=DEFAULTS['exponent'],
     choices=range(2, 10),
     help="Exponent of curve (%(default)s)")
 argp.add_argument(
@@ -99,30 +97,27 @@ argp.add_argument(
 argp.add_argument(
     "--wav", action='store_true', dest="wav", help="Save wav")
 argp.add_argument(
-    "--dpi", dest="dpi", type=int, help="Graph DPI")
+    "--gif", action='store_true', dest="gif", help="Save gif animation")
+argp.add_argument(
+    "--dpi", dest="dpi", type=int,
+    help="Graph/gif DPI (%(default)s)",
+    default=DEFAULTS['dpi'])
 argp.add_argument(
     "-D", action='store_true', dest="debug", help="Debug")
 args = argp.parse_args()
 
-if not (args.wav or args.graph or args.debug):
+if not (args.wav or args.graph or args.debug or args.gif):
     print(f'What to do - wav or graph?\n\n{argp.format_help()}')
     exit()
 
 if args.bezier:
     curve_fn = bezier_curve
     title = 'Bézier'
-    if args.mid_width_pct == None:
-        args.mid_width_pct = BEZIER_DEFAULTS.get('mid_width_pct')
-    if args.mid_hoffset == None:
-        args.mid_hoffset = BEZIER_DEFAULTS.get('mid_hoffset')
 else:
     curve_fn = exp_curve
     title = 'Exponential'
-    if args.mid_width_pct == None:
-        args.mid_width_pct = EXP_DEFAULTS.get('mid_width_pct')
-    if args.mid_hoffset == None:
-        args.mid_hoffset = EXP_DEFAULTS.get('mid_hoffset')
 
+# TODO: fix real width
 mid_samples = int((args.mid_width_pct / 100) * args.num_samples)
 mid_samples -= mid_samples % 2
 debug(f'mid_samples: {mid_samples} ({args.mid_width_pct}% of {args.num_samples})')
@@ -166,16 +161,14 @@ if args.debug:
     exit()
 
 if args.graph:
-    if isinstance(args.dpi, int):
-        plt.rcParams['figure.dpi'] = args.dpi
-
-    time = np.arange(0, args.num_samples)
+    plt.rcParams['figure.dpi'] = args.dpi
+    # time = np.arange(0, args.num_samples)
     # for graph in wf:
     #     plt.plot(time, graph)
     plt.plot(wf[0], label='first')
     plt.plot(wf[-1], label='last')
-    plt.xlabel('X/Sample')
-    plt.ylabel('Y/Amplitude')
+    plt.xlabel('Sample')
+    plt.ylabel('Amplitude')
     plt.title(
         f'{title} curve e={args.exp} m={args.mid_width_pct}% '
         f'h={args.mid_hoffset}% '
@@ -185,11 +178,33 @@ if args.graph:
     plt.show()
 
 if args.wav:
-    bn = '%dm_%dh_%de_%ds_%dw_%db' % (args.mid_width_pct,
+    ty = 'bz' if args.bezier else f'{args.exp}e'
+    bn = '%dm_%dh_%s_%ds_%dw_%db' % (args.mid_width_pct,
                                       args.mid_hoffset,
-                                      args.exp,
+                                      ty,
                                       args.num_samples,
                                       args.num_waveforms,
                                       args.bitwidth)
     wav = libwtwav.Wav(wf, args.bitwidth, bn)
     wav.save()
+
+if args.gif:
+    pcts = np.linspace(0,100,6,dtype=int)
+    indices = np.percentile(wf, pcts)
+    fig, ax = plt.subplots()
+    lines = []
+    for f in wf[pcts]:
+        line, = ax.plot(f)
+        lines.append([line])
+    ax.set_xlabel('Sample')
+    ax.set_ylabel('Amplitude')
+    param = '' if args.bezier else f'e={args.exp} '
+    ax.set_title(
+        f'{title} curve {param}m={args.mid_width_pct}% '
+        f'h={args.mid_hoffset}%')
+    ax.grid(True)
+    anim = animation.ArtistAnimation(fig, lines, interval=500, blit=True)
+    fn = '%dm_%dh_' % (args.mid_width_pct, args.mid_hoffset)
+    fn += 'bz' if args.bezier else f'{args.exp}e'
+    anim.save(f'wtc_{fn}_anim.gif', writer='pillow', dpi=args.dpi)
+

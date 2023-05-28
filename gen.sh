@@ -1,12 +1,12 @@
 #!/bin/bash
 
-m_start=20
+m_start=25
 m_end=70
-m_step=10
+m_step=25
 
 o_start=20
-o_end=70
-o_step=10
+o_end=80
+o_step=20
 
 for ((m=m_start; m<=m_end; m+=m_step)); do
   for ((o=o_start; o<=o_end; o+=o_step)); do
