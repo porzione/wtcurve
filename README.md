@@ -1,5 +1,5 @@
 
-# Tool for generating morphing wavetables used in audio synthesis.
+# Tool for generating wavetables used in audio synthesis.
 
 ## wtcurve
 
