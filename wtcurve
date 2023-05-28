@@ -4,6 +4,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+import matplotlib.ticker as mticker
 import libwtwav
 from argparse import ArgumentParser
 
@@ -117,7 +118,6 @@ else:
     curve_fn = exp_curve
     title = 'Exponential'
 
-# TODO: fix real width
 mid_samples = int((args.mid_width_pct / 100) * args.num_samples)
 mid_samples -= mid_samples % 2
 debug(f'mid_samples: {mid_samples} ({args.mid_width_pct}% of {args.num_samples})')
@@ -162,9 +162,6 @@ if args.debug:
 
 if args.graph:
     plt.rcParams['figure.dpi'] = args.dpi
-    # time = np.arange(0, args.num_samples)
-    # for graph in wf:
-    #     plt.plot(time, graph)
     plt.plot(wf[0], label='first')
     plt.plot(wf[-1], label='last')
     plt.xlabel('Sample')
@@ -178,23 +175,23 @@ if args.graph:
     plt.show()
 
 if args.wav:
-    ty = 'bz' if args.bezier else f'{args.exp}e'
-    bn = '%dm_%dh_%s_%ds_%dw_%db' % (args.mid_width_pct,
-                                      args.mid_hoffset,
-                                      ty,
-                                      args.num_samples,
-                                      args.num_waveforms,
-                                      args.bitwidth)
-    wav = libwtwav.Wav(wf, args.bitwidth, bn)
-    wav.save()
+    fn = '%dm_%dh_%s_%ds_%dw_%db.wav' % (
+         args.mid_width_pct,
+         args.mid_hoffset,
+         'bz' if args.bezier else f'{args.exp}e',
+         args.num_samples,
+         args.num_waveforms,
+         args.bitwidth)
+    print(f'saving: {fn}')
+    wav = libwtwav.Wav(wf, args.bitwidth)
+    wav.save(fn)
 
 if args.gif:
-    pcts = np.linspace(0,100,6,dtype=int)
-    indices = np.percentile(wf, pcts)
+    pct1 = args.num_waveforms / 100
     fig, ax = plt.subplots()
     lines = []
-    for f in wf[pcts]:
-        line, = ax.plot(f)
+    for pct in range(0,100,20):
+        line, = ax.plot(wf[int(pct*pct1)], 'b-')
         lines.append([line])
     ax.set_xlabel('Sample')
     ax.set_ylabel('Amplitude')

@@ -1,23 +1,22 @@
-# wtcurve
 
-Tool for generating morphing wavetables used in audio synthesis.
+# Tool for generating morphing wavetables used in audio synthesis.
 
-I have tested the 32-bit float WAV wavetables with the Linux versions of Surge XT, Bitwig Grid/Polymer, u-he Hive 2, and the Vital software synthesizers.
+## wtcurve
 
-Currently, the tool supports the generation of a single waveform, which can be defined either as a modified exponential function or a Bezier curve. The function's plot is reflected on both the x and y axes, featuring a square central part. This waveform is commonly used in modern EDM/Psytrance bass sounds. The script also has the capability to generate graph or animated gif of the waveform. The waveform transformation occurs by adjusting the tilt of the center line from a vertical position to a customized angle, where the center line occupies the percentage of the total width specified by the `-m` option.
+I have tested the 32-bit float WAV wavetables with the Linux versions of [Surge XT](https://surge-synthesizer.github.io/), Bitwig [Grid](https://www.bitwig.com/the-grid/)/[Polymer](https://www.bitwig.com/polymer/), [u-he Hive 2](https://u-he.com/products/hive/), and the [Vital](https://vital.audio/) software synthesizers.
 
-Exponential
+Currently, wtcurve supports the generation of a single waveform, which can be defined either as a modified exponential function or a Bezier curve. The function's plot is reflected on both the x and y axes, featuring a linear central part. This waveform is commonly used in modern EDM/Psytrance bass sounds. The script also has the capability to generate graph or animated gif of the waveform. The waveform transformation occurs by adjusting the tilt of the center line from a vertical position to a customized angle, where the center line occupies the percentage of the total width specified by the `-m` option.
+
 ![Exponential waveforms](images/wtc_60m_25h_5e_anim.gif)
 
-Bézier
 ![Bézier waveforms](images/wtc_60m_25h_bz_anim.gif)
 
 Bitwig 3D previews of wavetables that are generated using various parameters
 ![Bitwig previews](images/bitwig_previews.png)
 
-Defaults: 32 bit float WAV, 256 waveforms, 2048 samples.
+Defaults: 32 bit float WAV, 256 waveforms, 2048 samples. File size with these parameters is ~2.1Mb
 
-Requirements: python 3.x with numpy, matplotlib, soundfile.
+Requirements: Python 3 with [NumPy](https://numpy.org/install/), [Matplotlib](https://matplotlib.org), [soundfile](https://github.com/bastibe/python-soundfile).
 
 Surely there are bugs here.
 
@@ -48,7 +47,7 @@ options:
 
 Try to play with `-m` from 20 to 50, `-o` from 20 to 70, `-e` with indicated range. Check the graph with `--graph`, it will show first and last frames.
 
-# wttag
+## wttag
 
 To ensure compatibility with most synthesizers, wavetables need to be tagged with the wttag script, using the same -w and -s values as specified for the wtcurve. This script adds a WAV chunk to the WAV file, indicating the number of waveforms or samples based on the chunk type. In most cases, using --clm should work fine. Please note that I am unable to test the output WAVs with Serum as I don't have access to it. Example:
 
@@ -56,7 +55,7 @@ To ensure compatibility with most synthesizers, wavetables need to be tagged wit
 wttag -s 2048 -w 256 -i wtc_20m_20h_5e_2048s_256w_32b.wav -o wtv_clm.wav --clm
 ```
 
-## to be continued
+### to be continued
 
 ## (C)
 
