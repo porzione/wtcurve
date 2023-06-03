@@ -22,19 +22,17 @@ echo savgol=$savgol
 ./wtcurve --fullfn -s $sa -w $wa --savgol ${savgol},3 --wt --bits 16
 ./wtcurve -w $wa --savgol ${savgol},3 --h2p
 
-echo variable m/o
-for ((m=30; m<=90; m+=30)); do
-  for ((o=25; o<=40; o+=5)); do
-    ./wtcurve --fullfn -s $sa -w $wa -m $m -o $o --wav
-    ./wtcurve --fullfn -s $sa -w $wa -m $m -o $o --wav -B
-    ./wtcurve --fullfn -s $sa -w $wl -m $m -o $o --wav -L
-    ./wtcurve --fullfn -s $sa -w $wa -m $m -o $o --wt --bits 16
-    ./wtcurve --fullfn -s $sa -w $wa -m $m -o $o --wt -B --bits 16
-    ./wtcurve --fullfn -s $sa -w $wl -m $m -o $o --wt -L --bits 16
-    ./wtcurve -m $m -o $o --h2p
-    ./wtcurve -m $m -o $o --h2p -B
-    ./wtcurve -m $m -o $o --h2p -L
-  done
+echo variable offset
+  for ((o=25; o<=45; o+=10)); do
+    ./wtcurve --fullfn -s $sa -w $wa -o $o --wav --gif
+    ./wtcurve --fullfn -s $sa -w $wa -o $o --wav -B --gif
+    ./wtcurve --fullfn -s $sa -w $wl -o $o --wav -L --gif
+    ./wtcurve --fullfn -s $sa -w $wa -o $o --wt --bits 16
+    ./wtcurve --fullfn -s $sa -w $wa -o $o --wt -B --bits 16
+    ./wtcurve --fullfn -s $sa -w $wl -o $o --wt -L --bits 16
+    ./wtcurve -o $o --h2p
+    ./wtcurve -o $o --h2p -B
+    ./wtcurve -o $o --h2p -L
 done
 
 #echo variable o with gauss/savgol

@@ -16,7 +16,7 @@ DEFAULTS = {
     "bitwidth": 32,
     "dpi": 200,
     "exponent": 5,
-    "mid_width_pct": 60,
+    "mid_width_pct": 70,
     "mid_yoffset": 25
 }
 
