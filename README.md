@@ -8,15 +8,17 @@ I have tested the 32-bit float WAV wavetables with the Linux versions of [Surge 
 
 ### Animations
 
-![Exponential waveforms](images/60m_25h_5e_anim.gif)
+![Exponential function](images/70m_25h_5e_anim.gif)
 
-![Bézier waveforms](images/60m_25h_bz_anim.gif)
+![Bézier with alt offset](images/70m_45h_bz_anim.gif)
 
-![Direct line](images/60m_25h_dl_anim.gif)
+![Direct line](images/70m_25h_dl_anim.gif)
 
-![Gaussian filter](images/60m_35h_9e_ga40_anim.gif)
+![Gaussian filter](images/70m_25h_9e_ga40_anim.gif)
 
-![Savitzky-Golay filter](images/60m_25h_5e_sg10-3_anim.gif)
+![Direct + Gaussian](images/70m_25h_dl_ga40_anim.gif)
+
+![Savitzky-Golay filter](images/70m_25h_5e_sg10-3_anim.gif)
 
 Defaults: 32 bit float WAV, 256 waveforms, 2048 samples.
 
@@ -58,14 +60,6 @@ options:
 
 Try to play with `-m` from 20 to 50, `-o` from 20 to 70, `-e` with indicated range. Check the graph with `--graph`, it will show first and last frames.
 
-### Screenhots
-
-Bitwig 3D previews of wavetables that are generated using various parameters
-![Bitwig previews](images/bitwig_previews.jpg)
-
-Hive 2 wavetable oscillator
-![Hive 2 WT OSC](images/hive_wt.jpg)
-
 ## wttag
 
 To ensure compatibility with most synthesizers, wavetables need to be tagged with the wttag script, using the same -w and -s values as specified for the wtcurve. This script adds a WAV chunk to the WAV file, indicating the number of waveforms or samples based on the chunk type. In most cases, using --clm should work fine. Please note that I am unable to test the output WAVs with Serum as I don't have access to it. Example:
@@ -73,6 +67,24 @@ To ensure compatibility with most synthesizers, wavetables need to be tagged wit
 ```text
 wttag -s 2048 -w 256 -i wtc_20m_20h_5e_2048s_256w.wav -o wtv_clm.wav --clm
 ```
+
+### Screenhots
+
+Bitwig 3D previews of wavetables that are generated using various parameters
+
+![Bitwig previews](images/bitwig_previews.jpg)
+
+Hive 2 wavetable oscillator
+
+![Hive 2 WT OSC](images/hive_wt.jpg)
+
+Zebra 2 oscillator
+
+![Zebra 2 OSC](images/zebra_osc.jpg)
+
+Surge XT wavetable oscillator
+
+![Zebra 2 OSC](images/surgext_osc.jpg)
 
 ## (C)
 
