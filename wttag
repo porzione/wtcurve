@@ -5,6 +5,7 @@ from argparse import ArgumentParser
 import numpy as np
 import struct
 import os
+# from hexdump import hexdump
 
 TAGS = {
     'uhe': b'uhWT',
@@ -26,6 +27,7 @@ class Chunk:
                 num_waveforms,
                 num_samples
         )
+        print(f'description: {self.description}')
 
     def mk_uhe(self):
         chlen = 272
@@ -108,13 +110,19 @@ with open(args.src_file, 'rb') as src:
             head = src.read(8)
             chid, size = struct.unpack('<4sI', head)
             found_chunks.append(chid)
-            print(f'found_chunks: {found_chunks}')
+            #print(f'found_chunks: {found_chunks}')
             print(f'chunk id: {chid}, size: {size}')
-            data = src.read(size)
+            data = bytearray(src.read(size)) # change fmt
             print(f'read size: {len(data)}')
             # TODO: use skip tag arg
             if chid in [b'PEAK', b'fact']:
                 continue
+            elif chid == b'fmt ':
+                # 2/0,1 2/2,3 4/4,7 4/8,11 2/12,13 2/14,15
+                data[8:12] = struct.pack('<I', 0)  # zero rate
+                fmt, ch, sr, br, ba, bits = struct.unpack('<HHIIHH', data[:16])
+                print(f'fmt: {fmt}, ch: {ch}, sr: {sr}, br: {br}, '
+                      f'ba: {ba}, bits: {bits}')
             elif chid == b'data':
                 # write new chunks before data
                 if args.tag_surge:

@@ -4,23 +4,25 @@
 import struct
 import sys
 import glob
-from os.path import isdir, isfile, join
+from os.path import isdir, isfile, join, getsize
 from hexdump import hexdump
 
 
 def read_chunks(file):
     with open(file, 'rb') as f:
         # Read the first 12 bytes, which should be the RIFF header
-        riff, size, fformat = struct.unpack('<4sI4s', f.read(12))
-        print(f'header: {riff}, size: {size}, format: {fformat}')
+        riff, wavsize, fformat = struct.unpack('<4sI4s', f.read(12))
+        print(f'header: {riff}, size: {wavsize}, format: {fformat}')
 
-        datac = 0
+        datac = datasz = 0
+        samples = waveforms = 0
         # Read each chunk
         while True:
             try:
                 # Each chunk starts with a 4-byte ID and a 4-byte size
                 # fmt should always be 16, 18 or 40
-                chid, size = struct.unpack('<4sI', f.read(8))
+                raw_h = f.read(8)
+                chid, size = struct.unpack('<4sI', raw_h)
                 data = f.read(size)
                 print(f'chunk id: {chid}, size: {size}')
                 if chid == b'fmt ':
@@ -39,28 +41,34 @@ def read_chunks(file):
                         print("unpack fmt exception:", e)
 
                 elif chid == b'srge':
-                    l = struct.unpack('<H', data[4:6])[0]
-                    print(f'samples: {l}')
+                    samples = struct.unpack('<H', data[4:6])[0]
                     # hexdump(data)
                 elif chid == b'uhWT':
-                    l = struct.unpack('<I', data[4:8])[0]
-                    print(f'waveforms: {l}')
-                    # hexdump(data)
+                    waveforms = struct.unpack('<I', data[4:8])[0]
+                    hexdump(raw_h+data[:56])
                 elif chid == b'clm ':
-                    print(data[3:].decode('utf-8'))
+                    d = data[3:].decode('utf-8')
+                    print(d)
+                    samples = int(d.split(' ')[0])
                 elif chid == b'data':
                     # print(data[:8])
                     datac += 1
+                    datasz += size
                 elif chid in [b'PEAK', b'fact', b'LGWV', b'JUNK', b'AFAn',
-                              b'ID3 ']:
+                              b'ID3 ', b'SAUR', b'smpl', b'LIST']:
+                    hexdump(data)
                     continue
                 else:
                     print('WHO?')
                     hexdump(data[:10])
 
             except struct.error:
-                print(f'data chunks: {datac}')
                 # print(f'ERR/END: ID: {chid}, size: {size}')
+                print(f'data chunks: {datac} size: {datasz}')
+                if waveforms > 0:
+                    print(f'w:{waveforms} s:{int(datasz/(waveforms*bits/8))}')
+                elif samples > 0:
+                    print(f'w:{int(datasz//(samples*bits/8))} s:{samples}')
                 break
 
             except Exception as e:
@@ -77,5 +85,5 @@ if len(sys.argv) > 1:
                 read_chunks(f)
 
         elif isfile:
-            print(f'FILE: {inp}')
+            print(f'FILE: {inp} size: {getsize(inp)}')
             read_chunks(inp)

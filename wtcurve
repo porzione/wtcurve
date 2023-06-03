@@ -2,11 +2,13 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+from scipy.signal import savgol_filter
+from scipy.ndimage import gaussian_filter1d
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import subprocess
 import libwt
-from argparse import ArgumentParser
+from argparse import ArgumentParser, ArgumentTypeError
 
 DEFAULTS = {
     "num_waveforms": 256,
@@ -61,6 +63,54 @@ def line(x1, y1, x2, y2, num_points):
     return y_values
 
 
+def fmt_fn(ext):
+    if ext == 'wav':
+        fn = f'%dm_%dh_%s{suffix}' % (
+                 args.mid_width_pct,
+                 args.mid_yoffset,
+                 mtype)
+        if args.fullname:
+            fn = f'{fn}_%ds_%dw' % (
+                args.num_samples,
+                args.num_waveforms)
+    elif ext == 'wt':
+        fn = f'%dm_%dh_%s{suffix}' % (
+                 args.mid_width_pct,
+                 args.mid_yoffset,
+                 mtype)
+        if args.fullname:
+            fn = f'{fn}_%ds_%dw' % (
+                args.num_samples,
+                args.num_waveforms)
+    elif ext == 'h2p':
+        fn = f'%dm_%dh_%s{suffix}' % (
+                 args.mid_width_pct,
+                 args.mid_yoffset,
+                 mtype)
+        if args.fullname:
+            fn = f'{fn}_%ds_%dw' % (
+                args.num_samples,
+                args.num_waveforms)
+    elif ext == 'gif':
+        fn = '%dm_%dh_%s' % (
+                args.mid_width_pct,
+                args.mid_yoffset,
+                mtype)
+        fn = f'{fn}{suffix}_anim'
+    else:
+        exit(1)
+    return f'{fn}.{ext}'
+
+
+def tuple_2int(value):
+    try:
+        items = [int(x) for x in value.split(',')]
+        if len(items) != 2:
+            raise ArgumentTypeError("Tuple argument must contain 2 items separated by comma")
+        return tuple(items)
+    except:
+        raise ArgumentTypeError("Invalid tuple argument")
+
 argp = ArgumentParser()
 argp.add_argument(
     "-w", dest="num_waveforms", type=int,
@@ -93,6 +143,15 @@ argp.add_argument(
     "-B", action='store_true',
     dest="bezier", help="Build Bezier curve instead of exponent")
 argp.add_argument(
+    "-L", action='store_true',
+    dest="direct", help="Direct line instead of curve")
+argp.add_argument(
+    "--savgol", dest="savgol", type=tuple_2int,
+    help="Savitzky-Golay filter window_length,polyorder, e.g. '51,3'")
+argp.add_argument(
+    "--gauss", dest="gauss", type=int,
+    help="Gaussian filter, int sigma, e.g. 2")
+argp.add_argument(
     "--graph", action='store_true',
     dest="graph", help="Plot graph")
 argp.add_argument(
@@ -109,7 +168,11 @@ argp.add_argument(
     help="Graph/gif DPI (%(default)s)",
     default=DEFAULTS['dpi'])
 argp.add_argument(
-    "-O", action='store_true', dest="open")
+    "-O", action='store_true', dest="open",
+    help="Open gif")
+argp.add_argument(
+    "--fullfn", action='store_true', dest="fullname",
+    help="Add full info to file name")
 argp.add_argument(
     "-D", action='store_true', dest="debug", help="Debug")
 args = argp.parse_args()
@@ -121,10 +184,23 @@ if not (args.wav or args.graph or args.debug or args.gif or
 
 if args.bezier:
     curve_fn = bezier_curve
-    title = 'Bézier'
+    title = 'Bézier curve'
+    mtype = 'bz'
+elif args.direct:
+    curve_fn = line
+    title = 'Direct line'
+    mtype = 'dl'
 else:
     curve_fn = exp_curve
-    title = 'Exponential'
+    title = 'Exponential curve'
+    mtype = f'{args.exp}e'
+suffix=''
+if args.savgol:
+    title = f'{title} savgol={args.savgol}'
+    suffix = f'{suffix}_sg{args.savgol[0]}-{args.savgol[1]}'
+if args.gauss:
+    title = f'{title} gauss={args.gauss}'
+    suffix = f'{suffix}_ga{args.gauss}'
 
 if args.h2p:
     args.num_samples = 128
@@ -163,6 +239,13 @@ for i in range(args.num_waveforms):
     debug(f'ym: {ym} ({len(ym)})')
     y = np.concatenate((ya1, ym, ya2))
     debug(f'y: {y} {y.shape}')
+    if args.savgol:
+        # 50,3
+        y = savgol_filter(y, window_length=args.savgol[0], polyorder=args.savgol[1])
+    if args.gauss:
+        # 2
+        y = gaussian_filter1d(y, sigma=args.gauss)
+
 
     wf[i] = y
 
@@ -181,7 +264,7 @@ if args.graph:
     plt.xlabel('Samples %')
     plt.ylabel('Amplitude')
     plt.title(
-        f'{title} curve e={args.exp} m={args.mid_width_pct}% '
+        f'{title} e={args.exp} m={args.mid_width_pct}% '
         f'h={args.mid_yoffset}% '
         f's={args.num_samples} w={args.num_waveforms}')
     plt.grid(True)
@@ -189,32 +272,20 @@ if args.graph:
     plt.show()
 
 if args.wav:
-    fn = '%dm_%dh_%s_%ds_%dw.wav' % (
-         args.mid_width_pct,
-         args.mid_yoffset,
-         'bz' if args.bezier else f'{args.exp}e',
-         args.num_samples,
-         args.num_waveforms)
+    fn = fmt_fn('wav')
     print(f'saving: {fn}')
     wt = libwt.Wt(wf, args.bitwidth)
     wt.save_wav(fn)
 
 if args.wt:
-    fn = '%dm_%dh_%s_%ds_%dw.wt' % (
-         args.mid_width_pct,
-         args.mid_yoffset,
-         'bz' if args.bezier else f'{args.exp}e',
-         args.num_samples,
-         args.num_waveforms)
+    fn = fmt_fn('wt')
     print(f'saving: {fn}')
-    wt = libwt.Wt(wf)
+    wt = libwt.Wt(wf, args.bitwidth)
     wt.save_wt(fn)
 
 if args.h2p:
-    fn = '%dm_%dh_%s.h2p' % (
-         args.mid_width_pct,
-         args.mid_yoffset,
-         'bz' if args.bezier else f'{args.exp}e')
+    fn = fmt_fn('h2p')
+    print(f'saving: {fn}')
     wt = libwt.Wt(wf)
     wt.save_h2p(fn)
 
@@ -227,15 +298,14 @@ if args.gif:
         lines.append([line])
     ax.set_xlabel('Samples')
     ax.set_ylabel('Amplitude')
-    param = '' if args.bezier else f'e={args.exp} '
+    param = '' if args.bezier or args.direct else f'e={args.exp} '
     ax.set_title(
-        f'{title} curve {param}m={args.mid_width_pct}% '
+        f'{title} {param}m={args.mid_width_pct}% '
         f'h={args.mid_yoffset}%')
     ax.grid(True)
     anim = animation.ArtistAnimation(fig, lines, interval=500, blit=True)
-    fn = '%dm_%dh_' % (args.mid_width_pct, args.mid_yoffset)
-    fn += 'bz' if args.bezier else f'{args.exp}e'
-    fn = f'wtc_{fn}_anim.gif'
+    fn = fmt_fn('gif')
+    print(f'saving: {fn}')
     anim.save(fn, writer='pillow', dpi=args.dpi)
     if args.open:
         try:

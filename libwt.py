@@ -26,6 +26,10 @@ class Wt:
 
         self.wf = waveforms.flatten()
         self.num_waveforms, self.num_samples = waveforms.shape
+        if bitwidth not in [16, 32]:
+            print(f'wrong bitwidth: {self.bitwidth}')
+            exit()
+
         self.bitwidth = bitwidth
         # print(f'Wav waveforms: {self.num_waveforms}, '
         #       f'samples: {self.num_samples}')
@@ -34,8 +38,7 @@ class Wt:
     def save_wav(self, fn):
 
         if os.path.exists(fn):
-            print(f'File "{fn}" exists',
-                  file=sys.stderr)
+            print(f'File "{fn}" exists', file=sys.stderr)
             exit()
 
         normalized = self.wf / np.max(np.abs(self.wf))
@@ -43,38 +46,35 @@ class Wt:
         if self.bitwidth == 32:
             data = np.float32(normalized)
             wav_type = 'FLOAT'
-
-        elif self.bitwidth == 16:
+        else:
             data = np.int16(normalized * 32767)
             wav_type = 'PCM_16'
 
-        else:
-            print(f'wrong bitwidth: {self.bitwidth}')
-            exit()
-
         sf.write(fn, data, WAV_SAMPLE_RATE, wav_type)
 
-    # https://github.com/surge-synthesizer/surge/tree/main/scripts/wt-tool
+    # https://github.com/surge-synthesizer/surge/blob/main/resources/data/wavetables/WT%20fileformat.txt
     def save_wt(self, fn):
 
         if os.path.exists(fn):
-            print(f'File "{fn}" exists',
-                  file=sys.stderr)
-            # exit()
+            print(f'File "{fn}" exists', file=sys.stderr)
+            exit()
 
         with open(fn, "wb") as file:
             header = bytearray(12)
             header[:4]   = b'vawt'
             header[4:8]  = struct.pack('<I', self.num_samples)
             header[8:10] = struct.pack('<H', self.num_waveforms)
-            # flags:
-            # 0x01 is_sample
-            # 0x02 loop_sample
             # 0x04 int16/float32 2/4 bytes, int16 if 1
-            header[10:12] = b'\x00\x00'
+            bits = 0 if self.bitwidth == 32 else 4
+            header[10:12] = bytes([bits, 0])
             file.write(header)
 
-            self.wf.astype(np.float32).tofile(file)
+            normalized = self.wf / np.max(np.abs(self.wf))
+
+            if self.bitwidth == 32:
+                normalized.astype(np.float32).tofile(file)
+            else:
+                (normalized * 32767).astype(np.int16).tofile(file)
 
     # format borrowed from
     # https://github.com/harveyormston/osc_gen/blob/main/osc_gen/zosc.py
