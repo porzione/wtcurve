@@ -4,7 +4,7 @@
 
 wtcurve can generate symmetric waveforms using exponential function or bezier curve. The waveform has a linear central part, you can adjust the tilt of this part to custom angle using the `-m` option. The script can also plot the graph with first and last frame or save an animated gif of the waveform. By manipulating the parameters for Savitzky-Golay (`--savgol`) and Gaussian filters (`--gauss`), one can obtain a wide range of smoothed waveforms. Direct line (`-L`) instead of a curve allows the generation of diverse sawtooths.
 
-I have tested the 32-bit float WAV wavetables with the Linux versions of [Surge XT](https://surge-synthesizer.github.io/), Bitwig [Grid](https://www.bitwig.com/the-grid/), [u-he Hive 2](https://u-he.com/products/hive/), and the [Vital](https://vital.audio/) software synthesizers. For compatibility reasons, it is recommended to leave the default number of samples as 2048 (do not use `-s` flag). Only Surge XT is able to load tagged wavetables with arbitrary number of samples. 16-bit int and 32-bit float wt wavetables tested with Surge XT and Bitwig.
+I have tested the 32-bit float WAV wavetables with the Linux versions of [Surge XT](https://surge-synthesizer.github.io/), [Bitwig Studio Grid](https://www.bitwig.com/the-grid/), [u-he Hive 2](https://u-he.com/products/hive/), and the [Vital](https://vital.audio/) software synthesizers. For compatibility reasons, it is recommended to leave the default number of samples as 2048 (do not use `-s` flag). Only Surge XT is able to load tagged wavetables with arbitrary number of samples. 16-bit int and 32-bit float wt wavetables tested with Surge XT and Bitwig.
 
 ### Animations
 
@@ -16,7 +16,7 @@ I have tested the 32-bit float WAV wavetables with the Linux versions of [Surge 
 
 ![Gaussian filter](images/60m_35h_9e_ga40_anim.gif)
 
-![Savitzky-Golay filter](images/60m_30h_5e_sg200-5_anim.gif)
+![Savitzky-Golay filter](images/60m_25h_5e_sg10-3_anim.gif)
 
 Defaults: 32 bit float WAV, 256 waveforms, 2048 samples.
 

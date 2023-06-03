@@ -147,7 +147,7 @@ argp.add_argument(
     dest="direct", help="Direct line instead of curve")
 argp.add_argument(
     "--savgol", dest="savgol", type=tuple_2int,
-    help="Savitzky-Golay filter window_length,polyorder, e.g. '51,3'")
+    help="Savitzky-Golay filter window_length_pct(1-100),polyorder, e.g. '51,3'")
 argp.add_argument(
     "--gauss", dest="gauss", type=int,
     help="Gaussian filter, int sigma, e.g. 2")
@@ -240,8 +240,11 @@ for i in range(args.num_waveforms):
     y = np.concatenate((ya1, ym, ya2))
     debug(f'y: {y} {y.shape}')
     if args.savgol:
-        # 50,3
-        y = savgol_filter(y, window_length=args.savgol[0], polyorder=args.savgol[1])
+        if not args.savgol[0] in range(1,100):
+            print('savgol window should be in range 1-100%')
+            exit()
+        wlen = int(args.num_samples / 100 * args.savgol[0])
+        y = savgol_filter(y, window_length=wlen, polyorder=args.savgol[1])
     if args.gauss:
         # 2
         y = gaussian_filter1d(y, sigma=args.gauss)
