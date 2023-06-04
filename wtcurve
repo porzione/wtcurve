@@ -6,6 +6,7 @@ from scipy.signal import savgol_filter
 from scipy.ndimage import gaussian_filter1d
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+from mpl_toolkits.mplot3d import Axes3D
 import subprocess
 import libwt
 from argparse import ArgumentParser, ArgumentTypeError
@@ -161,6 +162,9 @@ argp.add_argument(
     "--graph", action='store_true',
     dest="graph", help="Plot graph")
 argp.add_argument(
+    "--graph3d", action='store_true',
+    dest="graph3d", help="Plot 3D graph")
+argp.add_argument(
     "--wav", action='store_true', dest="wav", help="Save wav")
 argp.add_argument(
     "--wt", action='store_true', dest="wt",
@@ -179,12 +183,14 @@ argp.add_argument(
 argp.add_argument(
     "--fullfn", action='store_true', dest="fullname",
     help="Add full info to file name")
+#argp.add_argument(
+#    "--number", dest="number", type=int)
 argp.add_argument(
     "-D", action='store_true', dest="debug", help="Debug")
 args = argp.parse_args()
 
-if not (args.wav or args.graph or args.debug or args.gif or
-        args.h2p or args.wt):
+if not (args.wav or args.graph or args.graph3d or args.debug or
+        args.gif or args.h2p or args.wt):
     print(f'What to do?\n\n{argp.format_help()}')
     exit()
 
@@ -288,6 +294,25 @@ if args.graph:
         f's={args.num_samples} w={args.num_waveforms}')
     plt.grid(True)
     plt.legend()
+    plt.show()
+
+if args.graph3d:
+    plt.rcParams['figure.dpi'] = args.dpi
+    x = np.arange(wf.shape[1])
+    y = np.arange(wf.shape[0])
+    x, y = np.meshgrid(x, y)
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot_surface(x, y, wf, cmap='twilight')
+    ax.view_init(elev=20, azim=250)
+    ax.grid(False)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_zticks([])
+    plt.title(
+        f'{title} e={args.exp} m={args.mid_width_pct}% '
+        f'h={args.mid_yoffset}% '
+        f's={args.num_samples} w={args.num_waveforms}')
     plt.show()
 
 if args.wav:

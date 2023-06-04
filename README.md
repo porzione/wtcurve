@@ -2,13 +2,15 @@
 
 ## wtcurve
 
-wtcurve can generate symmetric waveforms using exponential function or bezier curve. The waveform has a linear central part, you can adjust the tilt of this part to custom angle using the `-m` option. The script can also plot the graph with first and last frame or save an animated gif of the waveform. By manipulating the parameters for Savitzky-Golay (`--savgol`) and Gaussian filters (`--gauss`), one can obtain a wide range of smoothed waveforms. Direct line (`-L`) instead of a curve allows the generation of diverse sawtooths.
+wtcurve can generate symmetric waveforms using exponential function or bezier curve. The waveform has a linear central part, you can adjust the tilt of this part to custom angle using the `-m` option. The script can also plot the graph with first and last frame, 3D graph or save an animated gif of the waveform. By manipulating the parameters for Savitzky-Golay (`--savgol`) and Gaussian filters (`--gauss`), one can obtain a wide range of smoothed waveforms. Direct line (`-L`) instead of a curve allows the generation of diverse sawtooths.
 
 I have tested the 32-bit float WAV wavetables with the Linux versions of [Surge XT](https://surge-synthesizer.github.io/), [Bitwig Studio Grid](https://www.bitwig.com/the-grid/), [u-he Hive 2](https://u-he.com/products/hive/), and the [Vital](https://vital.audio/) software synthesizers. For compatibility reasons, it is recommended to leave the default number of samples as 2048 (do not use `-s` flag). Only Surge XT is able to load tagged wavetables with arbitrary number of samples. 16-bit int and 32-bit float wt wavetables tested with Surge XT and Bitwig.
 
-### Animations
+### Visuals
 
 ![Exponential function](images/70m_25h_5e_anim.gif)
+
+![Exponential function 3D](images/70m_25h_5e_3d.jpg)
 
 ![Bézier with alt offset](images/70m_45h_bz_anim.gif)
 
@@ -36,8 +38,8 @@ We have help:
 $ wtcurve --help
 
 usage: wtcurve [-h] [-w NUM_WAVEFORMS] [-s {16,32,64,128,256,512,1024,2048,4096}] [--bits {16,32}] [-m MID_WIDTH_PCT] [-o MID_YOFFSET] [-e {2,3,4,5,6,7,8,9}]
-               [-B] [-L] [--savgol SAVGOL] [--gauss GAUSS] [--bitcrush BITCRUSH] [--tanh TANH] [--graph] [--wav] [--wt] [--h2p] [--gif] [--dpi DPI] [-O]
-               [--fullfn] [-D]
+               [-B] [-L] [--savgol SAVGOL] [--gauss GAUSS] [--bitcrush BITCRUSH] [--tanh TANH] [--graph] [--graph3d] [--wav] [--wt] [--h2p] [--gif]
+               [--dpi DPI] [-O] [--fullfn] [-D]
 
 options:
   -h, --help            show this help message and exit
@@ -55,6 +57,7 @@ options:
   --bitcrush BITCRUSH   Bitcrush depth, int, e.g. 5
   --tanh TANH           Hyperbolic tangent, float, e.g. 4.0
   --graph               Plot graph
+  --graph3d             Plot 3D graph
   --wav                 Save wav
   --wt                  Save wt (Bitwig/Surge)
   --h2p                 Save Zebra OSC h2p
@@ -77,10 +80,6 @@ wttag -s 2048 -w 256 -i wtc_20m_20h_5e_2048s_256w.wav -o wtv_clm.wav --clm
 
 ### Screenhots
 
-Bitwig 3D previews of wavetables that are generated using various parameters
-
-![Bitwig previews](images/bitwig_previews.jpg)
-
 Hive 2 wavetable oscillator
 
 ![Hive 2 WT OSC](images/hive_wt.jpg)
@@ -88,10 +87,6 @@ Hive 2 wavetable oscillator
 Zebra 2 oscillator
 
 ![Zebra 2 OSC](images/zebra_osc.jpg)
-
-Surge XT wavetable oscillator
-
-![Zebra 2 OSC](images/surgext_osc.jpg)
 
 ## (C)
 
