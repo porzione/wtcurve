@@ -35,8 +35,9 @@ We have help:
 ```text
 $ wtcurve --help
 
-usage: wtcurve [-h] [-w NUM_WAVEFORMS] [-s {16,32,64,128,256,512,1024,2048,4096}] [--bits {16,32}] [-m MID_WIDTH_PCT] [-o MID_YOFFSET] [-e {2,3,4,5,6,7,8,9}] [-B] [-L] [--savgol SAVGOL]
-               [--gauss GAUSS] [--graph] [--wav] [--wt] [--h2p] [--gif] [--dpi DPI] [-O] [--fullfn] [-D]
+usage: wtcurve [-h] [-w NUM_WAVEFORMS] [-s {16,32,64,128,256,512,1024,2048,4096}] [--bits {16,32}] [-m MID_WIDTH_PCT] [-o MID_YOFFSET] [-e {2,3,4,5,6,7,8,9}]
+               [-B] [-L] [--savgol SAVGOL] [--gauss GAUSS] [--bitcrush BITCRUSH] [--tanh TANH] [--graph] [--wav] [--wt] [--h2p] [--gif] [--dpi DPI] [-O]
+               [--fullfn] [-D]
 
 options:
   -h, --help            show this help message and exit
@@ -44,13 +45,15 @@ options:
   -s {16,32,64,128,256,512,1024,2048,4096}
                         Number of samples in waveform (2048)
   --bits {16,32}        Bit width (32)
-  -m MID_WIDTH_PCT      Middle part width in % (60)
+  -m MID_WIDTH_PCT      Middle part width in % (70)
   -o MID_YOFFSET        Offset from y-axis in % (25)
   -e {2,3,4,5,6,7,8,9}  Exponent of curve (5)
   -B                    Build Bezier curve instead of exponent
   -L                    Direct line instead of curve
-  --savgol SAVGOL       Savitzky-Golay filter window_length,polyorder, e.g. '51,3'
+  --savgol SAVGOL       Savitzky-Golay filter window_length_pct(1-100),polyorder, e.g. '51,3'
   --gauss GAUSS         Gaussian filter, int sigma, e.g. 2
+  --bitcrush BITCRUSH   Bitcrush depth, int, e.g. 5
+  --tanh TANH           Hyperbolic tangent, float, e.g. 4.0
   --graph               Plot graph
   --wav                 Save wav
   --wt                  Save wt (Bitwig/Surge)
