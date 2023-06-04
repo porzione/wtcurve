@@ -2,29 +2,29 @@
 
 ## wtcurve
 
-wtcurve can generate symmetric waveforms using exponential function or bezier curve. The waveform has a linear central part, you can adjust the tilt of this part to custom angle using the `-m` option. The script can also plot the graph with first and last frame, 3D graph or save an animated gif of the waveform. By manipulating the parameters for Savitzky-Golay (`--savgol`) and Gaussian filters (`--gauss`), one can obtain a wide range of smoothed waveforms. Direct line (`-L`) instead of a curve allows the generation of diverse sawtooths.
+wtcurve can generate symmetric waveforms using exponential function or bezier curve. The waveform has a linear central part, you can adjust the tilt of this part to custom angle using the `-m` option. The script can also plot the graph with first and last frame, 3D graph with full wavetable or save an animated gif. By manipulating the parameters for Savitzky-Golay `--savgol` and Gaussian filters `--gauss`, bitcrush `--bitcrush` and Hyperbolic tangent `--tanh` one can obtain a wide range of waveforms. Direct line (`-L`) instead of a curve allows the generation of diverse sawtooths.
 
 I have tested the 32-bit float WAV wavetables with the Linux versions of [Surge XT](https://surge-synthesizer.github.io/), [Bitwig Studio Grid](https://www.bitwig.com/the-grid/), [u-he Hive 2](https://u-he.com/products/hive/), and the [Vital](https://vital.audio/) software synthesizers. For compatibility reasons, it is recommended to leave the default number of samples as 2048 (do not use `-s` flag). Only Surge XT is able to load tagged wavetables with arbitrary number of samples. 16-bit int and 32-bit float wt wavetables tested with Surge XT and Bitwig.
 
 ### Visuals
 
-![Exponential function](images/70m_25h_5e_anim.gif)
+![Exponential function](images/70m_25h_5e_anim.gif "Exponential function")
 
-![Exponential function 3D](images/70m_25h_5e_3d.jpg)
+![Exponential function 3D](images/70m_25h_5e_3d.jpg "Exponential function 3D")
 
-![Bézier with alt offset](images/70m_45h_bz_anim.gif)
+![Bézier with alt offset](images/70m_45h_bz_anim.gif "Bézier with alt offset")
 
-![Direct line](images/70m_25h_dl_anim.gif)
+![Direct line](images/70m_25h_dl_anim.gif "Direct line")
 
-![Gaussian filter](images/70m_25h_9e_ga40_anim.gif)
+![Gaussian filter](images/70m_25h_9e_ga40_anim.gif "Gaussian filter")
 
-![Direct + Gaussian](images/70m_25h_dl_ga40_anim.gif)
+![Direct + Gaussian](images/70m_25h_dl_ga40_anim.gif "Direct + Gaussian")
 
-![Savitzky-Golay filter](images/70m_25h_5e_sg10-3_anim.gif)
+![Savitzky-Golay filter](images/70m_25h_5e_sg10-3_anim.gif "Savitzky-Golay filter")
 
-![Hyperbolic tangent](images/70m_5h_5e_tanh5.0_anim.gif)
+![Hyperbolic tangent](images/70m_5h_5e_tanh5.0_anim.gif "Hyperbolic tangent")
 
-![Bitcrush](images/70m_25h_5e_bc4_anim.gif)
+![Bitcrush](images/70m_25h_5e_bc4_anim.gif "Bitcrush")
 
 Defaults: 32 bit float WAV, 256 waveforms, 2048 samples.
 

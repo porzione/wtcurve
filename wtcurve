@@ -16,6 +16,7 @@ DEFAULTS = {
     "num_samples": 2048,
     "bitwidth": 32,
     "dpi": 200,
+    "fontsize": 8,
     "exponent": 5,
     "mid_width_pct": 70,
     "mid_yoffset": 25
@@ -64,7 +65,7 @@ def line(x1, y1, x2, y2, num_points):
     return y_values
 
 
-def fmt_fn(ext):
+def fmt_fn(ext, add=None):
     if ext == 'wav':
         fn = f'%dm_%dh_%s{suffix}' % (
                  args.mid_width_pct,
@@ -98,6 +99,13 @@ def fmt_fn(ext):
                 args.mid_yoffset,
                 mtype)
         fn = f'{fn}{suffix}_anim'
+    elif ext == 'png':
+        fn = '%dm_%dh_%s' % (
+                args.mid_width_pct,
+                args.mid_yoffset,
+                mtype)
+        fn += f'_{add}' if add else ''
+        fn = f'{fn}{suffix}'
     else:
         exit(1)
     return f'{fn}.{ext}'
@@ -165,6 +173,9 @@ argp.add_argument(
     "--graph3d", action='store_true',
     dest="graph3d", help="Plot 3D graph")
 argp.add_argument(
+    "--png", action='store_true',
+    dest="png", help="Save graph to png file")
+argp.add_argument(
     "--wav", action='store_true', dest="wav", help="Save wav")
 argp.add_argument(
     "--wt", action='store_true', dest="wt",
@@ -177,6 +188,10 @@ argp.add_argument(
     "--dpi", dest="dpi", type=int,
     help="Graph/gif DPI (%(default)s)",
     default=DEFAULTS['dpi'])
+argp.add_argument(
+    "--fontsize", dest="fontsize", type=int,
+    help="Graph/gif fontsize (%(default)s)",
+    default=DEFAULTS['fontsize'])
 argp.add_argument(
     "-O", action='store_true', dest="open",
     help="Open gif")
@@ -280,24 +295,31 @@ if args.debug:
     print(wf)
     exit()
 
+plt.rcParams['xtick.labelsize'] = args.fontsize
+plt.rcParams['ytick.labelsize'] = args.fontsize
+plt.rcParams['figure.dpi'] = args.dpi
+
 if args.graph:
-    plt.rcParams['figure.dpi'] = args.dpi
     x = np.linspace(0, 100, args.num_samples)
     plt.xticks(np.arange(min(x), max(x)+1, 25))
     plt.plot(x,wf[0], 'm-', label='first waveform')
-    plt.plot(x,wf[-1], 'c-',  label='last waveform')
-    plt.xlabel('Samples %')
-    plt.ylabel('Amplitude')
+    plt.plot(x,wf[-1], 'c-', label='last waveform')
+    ax = plt.gca()
+    ax.xaxis.set_ticklabels([])
+    plt.ylabel('Amplitude', fontsize=args.fontsize)
     plt.title(
         f'{title} e={args.exp} m={args.mid_width_pct}% '
         f'h={args.mid_yoffset}% '
-        f's={args.num_samples} w={args.num_waveforms}')
+        f's={args.num_samples} w={args.num_waveforms}',
+        fontsize=args.fontsize)
     plt.grid(True)
-    plt.legend()
+    plt.legend(fontsize=args.fontsize)
+    if args.png:
+        fn = fmt_fn('png', '2d')
+        plt.savefig(fn, dpi=args.dpi)
     plt.show()
 
 if args.graph3d:
-    plt.rcParams['figure.dpi'] = args.dpi
     x = np.arange(wf.shape[1])
     y = np.arange(wf.shape[0])
     x, y = np.meshgrid(x, y)
@@ -311,9 +333,40 @@ if args.graph3d:
     ax.set_zticks([])
     plt.title(
         f'{title} e={args.exp} m={args.mid_width_pct}% '
-        f'h={args.mid_yoffset}% '
-        f's={args.num_samples} w={args.num_waveforms}')
+        f'h={args.mid_yoffset}%',
+        y=0.95,
+        fontsize=args.fontsize)
+    plt.subplots_adjust(bottom=0, top=1.03)
+    if args.png:
+        fn = fmt_fn('png', '3d')
+        plt.savefig(fn, dpi=int(args.dpi*1.2), pad_inches=0)
     plt.show()
+
+if args.gif:
+    pct1 = args.num_waveforms / 100
+    fig, ax = plt.subplots()
+    lines = []
+    for pct in range(0, 100, 20):
+        line, = ax.plot(wf[int(pct*pct1)], 'm-')
+        lines.append([line])
+    ax.xaxis.set_ticklabels([])
+    ax.set_ylabel('Amplitude', fontsize=args.fontsize)
+    param = '' if args.bezier or args.direct else f'e={args.exp} '
+    ax.set_title(
+        f'{title} {param}m={args.mid_width_pct}% '
+        f'h={args.mid_yoffset}%',
+        fontsize=args.fontsize)
+    ax.grid(True)
+    anim = animation.ArtistAnimation(fig, lines, interval=500, blit=True)
+    fn = fmt_fn('gif')
+    print(f'saving: {fn}')
+    anim.save(fn, writer='pillow', dpi=args.dpi)
+    if args.open:
+        try:
+            cmd = f'mimeopen {fn}'
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        except subprocess.CalledProcessError as e:
+            print(e.returncode, e.stdout, e.stderr)
 
 if args.wav:
     fn = fmt_fn('wav')
@@ -332,29 +385,4 @@ if args.h2p:
     print(f'saving: {fn}')
     wt = libwt.Wt(wf)
     wt.save_h2p(fn)
-
-if args.gif:
-    pct1 = args.num_waveforms / 100
-    fig, ax = plt.subplots()
-    lines = []
-    for pct in range(0, 100, 20):
-        line, = ax.plot(wf[int(pct*pct1)], 'm-')
-        lines.append([line])
-    ax.set_xlabel('Samples')
-    ax.set_ylabel('Amplitude')
-    param = '' if args.bezier or args.direct else f'e={args.exp} '
-    ax.set_title(
-        f'{title} {param}m={args.mid_width_pct}% '
-        f'h={args.mid_yoffset}%')
-    ax.grid(True)
-    anim = animation.ArtistAnimation(fig, lines, interval=500, blit=True)
-    fn = fmt_fn('gif')
-    print(f'saving: {fn}')
-    anim.save(fn, writer='pillow', dpi=args.dpi)
-    if args.open:
-        try:
-            cmd = f'mimeopen {fn}'
-            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-        except subprocess.CalledProcessError as e:
-            print(e.returncode, e.stdout, e.stderr)
 

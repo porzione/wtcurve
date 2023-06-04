@@ -61,7 +61,7 @@ done
 #done
 
 echo variable exp
-for e in {2..9}; do
+for e in {4..9}; do
   if [[ $e -ne 5 ]] ; then
     ./wtcurve --fullfn -s $sa -w $wa -e $e --wav
     ./wtcurve --fullfn -s $sa -w $wa -e $e --wt --bits 16
