@@ -91,7 +91,7 @@ To ensure compatibility with most synthesizers, wavetables need to be tagged wit
 wttag -s 2048 -w 256 -i wtc_20m_20h_5e_2048s_256w.wav -o wtv_clm.wav --clm
 ```
 
-### Screenhots
+### Screenshots
 
 Hive 2 wavetable oscillator
 
