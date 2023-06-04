@@ -152,6 +152,12 @@ argp.add_argument(
     "--gauss", dest="gauss", type=int,
     help="Gaussian filter, int sigma, e.g. 2")
 argp.add_argument(
+    "--bitcrush", dest="bitcrush", type=int,
+    help="Bitcrush depth, int, e.g. 5")
+argp.add_argument(
+    "--tanh", dest="tanh", type=float,
+    help="Hyperbolic tangent, float")
+argp.add_argument(
     "--graph", action='store_true',
     dest="graph", help="Plot graph")
 argp.add_argument(
@@ -201,6 +207,12 @@ if args.savgol:
 if args.gauss:
     title = f'{title} gauss={args.gauss}'
     suffix = f'{suffix}_ga{args.gauss}'
+if args.bitcrush:
+    title = f'{title} bitcrush={args.bitcrush}'
+    suffix = f'{suffix}_bc{args.bitcrush}'
+if args.tanh:
+    title = f'{title} tanh={args.tanh}'
+    suffix = f'{suffix}_tanh{args.tanh}'
 
 if args.h2p:
     args.num_samples = 128
@@ -246,8 +258,12 @@ for i in range(args.num_waveforms):
         wlen = int(args.num_samples / 100 * args.savgol[0])
         y = savgol_filter(y, window_length=wlen, polyorder=args.savgol[1])
     if args.gauss:
-        # 2
         y = gaussian_filter1d(y, sigma=args.gauss)
+    if args.bitcrush:
+        max_val = 2**(args.bitcrush) - 1
+        y = np.round(y * max_val) / max_val
+    if args.tanh:
+        y = np.tanh(args.tanh * y)
 
 
     wf[i] = y

@@ -20,6 +20,10 @@ I have tested the 32-bit float WAV wavetables with the Linux versions of [Surge 
 
 ![Savitzky-Golay filter](images/70m_25h_5e_sg10-3_anim.gif)
 
+![Hyperbolic tangent](images/70m_5h_5e_tanh5.0_anim.gif)
+
+![Bitcrush](images/70m_25h_5e_bc4_anim.gif)
+
 Defaults: 32 bit float WAV, 256 waveforms, 2048 samples.
 
 Requirements: Python 3 with [NumPy](https://numpy.org/install/), [SciPy](https://scipy.org/), [Matplotlib](https://matplotlib.org), [soundfile](https://github.com/bastibe/python-soundfile).

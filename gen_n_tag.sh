@@ -10,6 +10,20 @@ wa=256
 # waveforms in simple tables
 wl=64
 
+bitcrush=4
+echo bitcrush=$bitcrush
+./wtcurve --fullfn -s $sa -w $wa --bitcrush $bitcrush --wav --gif
+./wtcurve --fullfn -s $sa -w $wa --bitcrush $bitcrush --wt --bits 16
+./wtcurve --bitcrush $bitcrush --h2p
+
+tanh=5
+o=5
+echo tanh=$tanh o=$o
+# need to correct offset
+./wtcurve --fullfn -s $sa -w $wa -o $o --tanh $tanh --wav --gif
+./wtcurve --fullfn -s $sa -w $wa -o $o --tanh $tanh --wt --bits 16
+./wtcurve --tanh $tanh -o $o --h2p
+
 gauss=40
 echo gauss=$gauss
 ./wtcurve --fullfn -s $sa -w $wa --gauss $gauss --wav --gif
