@@ -10,11 +10,12 @@ wa=256
 # waveforms in simple tables
 wl=64
 
-bitcrush=4
-echo bitcrush=$bitcrush
-./wtcurve --fullfn -s $sa -w $wa --bitcrush $bitcrush --wav --gif
-./wtcurve --fullfn -s $sa -w $wa --bitcrush $bitcrush --wt --bits 16
-./wtcurve --bitcrush $bitcrush --h2p
+echo bitcrush
+for bitcrush in 3 4 5; do
+  ./wtcurve --fullfn -s $sa -w $wa --bitcrush $bitcrush --wav --gif
+  ./wtcurve --fullfn -s $sa -w $wa --bitcrush $bitcrush --wt --bits 16
+  ./wtcurve --bitcrush $bitcrush --h2p
+done
 
 tanh=5
 o=5
@@ -37,7 +38,7 @@ echo savgol=$savgol
 ./wtcurve -w $wa --savgol ${savgol},3 --h2p
 
 echo variable offset
-  for ((o=25; o<=45; o+=10)); do
+  for o in 25 35; do
     ./wtcurve --fullfn -s $sa -w $wa -o $o --wav --gif
     ./wtcurve --fullfn -s $sa -w $wa -o $o --wav -B --gif
     ./wtcurve --fullfn -s $sa -w $wl -o $o --wav -L --gif

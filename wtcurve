@@ -156,7 +156,7 @@ argp.add_argument(
     help="Bitcrush depth, int, e.g. 5")
 argp.add_argument(
     "--tanh", dest="tanh", type=float,
-    help="Hyperbolic tangent, float")
+    help="Hyperbolic tangent, float, e.g. 4.0")
 argp.add_argument(
     "--graph", action='store_true',
     dest="graph", help="Plot graph")
