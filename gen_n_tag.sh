@@ -13,7 +13,7 @@ wl=64
 echo bitcrush
 for bitcrush in 3 4 5; do
   ./wtcurve --fullfn -s $sa -w $wa --bitcrush $bitcrush --wav --gif
-  ./wtcurve --fullfn -s $sa -w $wa --bitcrush $bitcrush --wt --bits 16
+  ./wtcurve --fullfn -s $sa -w $wa --bitcrush $bitcrush --wt --16
   ./wtcurve --bitcrush $bitcrush --h2p
 done
 
@@ -22,19 +22,19 @@ o=5
 echo tanh=$tanh o=$o
 # need to correct offset
 ./wtcurve --fullfn -s $sa -w $wa -o $o --tanh $tanh --wav --gif
-./wtcurve --fullfn -s $sa -w $wa -o $o --tanh $tanh --wt --bits 16
+./wtcurve --fullfn -s $sa -w $wa -o $o --tanh $tanh --wt --16
 ./wtcurve --tanh $tanh -o $o --h2p
 
 gauss=40
 echo gauss=$gauss
 ./wtcurve --fullfn -s $sa -w $wa --gauss $gauss --wav --gif
-./wtcurve --fullfn -s $sa -w $wa --gauss $gauss --wt --bits 16
+./wtcurve --fullfn -s $sa -w $wa --gauss $gauss --wt --16
 ./wtcurve --gauss $gauss --h2p
 
 savgol=10
 echo savgol=$savgol
 ./wtcurve --fullfn -s $sa -w $wa --savgol ${savgol},3 --wav --gif
-./wtcurve --fullfn -s $sa -w $wa --savgol ${savgol},3 --wt --bits 16
+./wtcurve --fullfn -s $sa -w $wa --savgol ${savgol},3 --wt --16
 ./wtcurve -w $wa --savgol ${savgol},3 --h2p
 
 echo variable offset
@@ -42,9 +42,9 @@ echo variable offset
     ./wtcurve --fullfn -s $sa -w $wa -o $o --wav --gif
     ./wtcurve --fullfn -s $sa -w $wa -o $o --wav -B --gif
     ./wtcurve --fullfn -s $sa -w $wl -o $o --wav -L --gif
-    ./wtcurve --fullfn -s $sa -w $wa -o $o --wt --bits 16
-    ./wtcurve --fullfn -s $sa -w $wa -o $o --wt -B --bits 16
-    ./wtcurve --fullfn -s $sa -w $wl -o $o --wt -L --bits 16
+    ./wtcurve --fullfn -s $sa -w $wa -o $o --wt --16
+    ./wtcurve --fullfn -s $sa -w $wa -o $o --wt -B --16
+    ./wtcurve --fullfn -s $sa -w $wl -o $o --wt -L --16
     ./wtcurve -o $o --h2p
     ./wtcurve -o $o --h2p -B
     ./wtcurve -o $o --h2p -L
@@ -54,8 +54,8 @@ done
 #for o in 25 35 50; do
 #  ./wtcurve --fullfn -s $sa -w $wa -o $o --wav --gif -L --gauss 1
 #  ./wtcurve --fullfn -s $sa -w $wa -o $o --wav --gif -L --savgol 10,3
-#  ./wtcurve --fullfn -s $sa -w $wl -o $o --wt --bits 16 -L --gauss 1
-#  ./wtcurve --fullfn -s $sa -w $wl -o $o --wt --bits 16 -L --savgol 10,3
+#  ./wtcurve --fullfn -s $sa -w $wl -o $o --wt --16 -L --gauss 1
+#  ./wtcurve --fullfn -s $sa -w $wl -o $o --wt --16 -L --savgol 10,3
 #  ./wtcurve -L --gauss 1 --h2p
 #  ./wtcurve -L --savgol 10,3 --h2p
 #done
@@ -64,7 +64,7 @@ echo variable exp
 for e in {4..9}; do
   if [[ $e -ne 5 ]] ; then
     ./wtcurve --fullfn -s $sa -w $wa -e $e --wav
-    ./wtcurve --fullfn -s $sa -w $wa -e $e --wt --bits 16
+    ./wtcurve --fullfn -s $sa -w $wa -e $e --wt --16
     ./wtcurve -e $e --h2p
   fi
 done

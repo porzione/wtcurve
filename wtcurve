@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from argparser_config import setup_parser
 import numpy as np
 from scipy.signal import savgol_filter
 from scipy.ndimage import gaussian_filter1d
@@ -9,18 +10,6 @@ import matplotlib.animation as animation
 from mpl_toolkits.mplot3d import Axes3D
 import subprocess
 import libwt
-from argparse import ArgumentParser, ArgumentTypeError
-
-DEFAULTS = {
-    "num_waveforms": 256,
-    "num_samples": 2048,
-    "bitwidth": 32,
-    "dpi": 200,
-    "fontsize": 8,
-    "exponent": 5,
-    "mid_width_pct": 70,
-    "mid_yoffset": 25
-}
 
 
 def debug(msg):
@@ -111,97 +100,7 @@ def fmt_fn(ext, add=None):
     return f'{fn}.{ext}'
 
 
-def tuple_2int(value):
-    try:
-        items = [int(x) for x in value.split(',')]
-        if len(items) != 2:
-            raise ArgumentTypeError("Tuple argument must contain 2 items separated by comma")
-        return tuple(items)
-    except:
-        raise ArgumentTypeError("Invalid tuple argument")
-
-argp = ArgumentParser()
-argp.add_argument(
-    "-w", dest="num_waveforms", type=int,
-    default=DEFAULTS['num_waveforms'],
-    help="Number of waveforms (%(default)s)")
-argp.add_argument(
-    "-s", dest="num_samples", type=int,
-    default=DEFAULTS['num_samples'],
-    choices=np.power(2, np.arange(4, 13)),
-    help="Number of samples in waveform (%(default)s)")
-argp.add_argument(
-    "--bits", dest="bitwidth", type=int,
-    default=DEFAULTS['bitwidth'],
-    choices=[16, 32],
-    help="Bit width (%(default)s)")
-argp.add_argument(
-    "-m", dest="mid_width_pct", type=int,
-    default=DEFAULTS['mid_width_pct'],
-    help="Middle part width in %% (%(default)s)")
-argp.add_argument(
-    "-o", dest="mid_yoffset", type=int,
-    default=DEFAULTS['mid_yoffset'],
-    help="Offset from y-axis in %% (%(default)s)")
-argp.add_argument(
-    "-e", dest="exp", type=int,
-    default=DEFAULTS['exponent'],
-    choices=range(2, 10),
-    help="Exponent of curve (%(default)s)")
-argp.add_argument(
-    "-B", action='store_true',
-    dest="bezier", help="Build Bezier curve instead of exponent")
-argp.add_argument(
-    "-L", action='store_true',
-    dest="direct", help="Direct line instead of curve")
-argp.add_argument(
-    "--savgol", dest="savgol", type=tuple_2int,
-    help="Savitzky-Golay filter window_length_pct(1-100),polyorder, e.g. '51,3'")
-argp.add_argument(
-    "--gauss", dest="gauss", type=int,
-    help="Gaussian filter, int sigma, e.g. 2")
-argp.add_argument(
-    "--bitcrush", dest="bitcrush", type=int,
-    help="Bitcrush depth, int, e.g. 5")
-argp.add_argument(
-    "--tanh", dest="tanh", type=float,
-    help="Hyperbolic tangent, float, e.g. 4.0")
-argp.add_argument(
-    "--graph", action='store_true',
-    dest="graph", help="Plot graph")
-argp.add_argument(
-    "--graph3d", action='store_true',
-    dest="graph3d", help="Plot 3D graph")
-argp.add_argument(
-    "--png", action='store_true',
-    dest="png", help="Save graph to png file")
-argp.add_argument(
-    "--wav", action='store_true', dest="wav", help="Save wav")
-argp.add_argument(
-    "--wt", action='store_true', dest="wt",
-    help="Save wt (Bitwig/Surge)")
-argp.add_argument(
-    "--h2p", action='store_true', dest="h2p", help="Save Zebra OSC h2p")
-argp.add_argument(
-    "--gif", action='store_true', dest="gif", help="Save gif animation")
-argp.add_argument(
-    "--dpi", dest="dpi", type=int,
-    help="Graph/gif DPI (%(default)s)",
-    default=DEFAULTS['dpi'])
-argp.add_argument(
-    "--fontsize", dest="fontsize", type=int,
-    help="Graph/gif fontsize (%(default)s)",
-    default=DEFAULTS['fontsize'])
-argp.add_argument(
-    "-O", action='store_true', dest="open",
-    help="Open gif")
-argp.add_argument(
-    "--fullfn", action='store_true', dest="fullname",
-    help="Add full info to file name")
-#argp.add_argument(
-#    "--number", dest="number", type=int)
-argp.add_argument(
-    "-D", action='store_true', dest="debug", help="Debug")
+argp = setup_parser()
 args = argp.parse_args()
 
 if not (args.wav or args.graph or args.graph3d or args.debug or
@@ -370,13 +269,13 @@ if args.gif:
 
 if args.wav:
     fn = fmt_fn('wav')
-    print(f'saving: {fn}')
+    print(f'saving: {fn} {args.bitwidth} bit')
     wt = libwt.Wt(wf, args.bitwidth)
     wt.save_wav(fn)
 
 if args.wt:
     fn = fmt_fn('wt')
-    print(f'saving: {fn}')
+    print(f'saving: {fn} {args.bitwidth} bit')
     wt = libwt.Wt(wf, args.bitwidth)
     wt.save_wt(fn)
 

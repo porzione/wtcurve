@@ -28,7 +28,7 @@ class Wt:
         self.num_waveforms, self.num_samples = waveforms.shape
         if bitwidth not in [16, 32]:
             print(f'wrong bitwidth: {self.bitwidth}')
-            exit()
+            exit(1)
 
         self.bitwidth = bitwidth
         # print(f'Wav waveforms: {self.num_waveforms}, '
@@ -39,7 +39,7 @@ class Wt:
 
         if os.path.exists(fn):
             print(f'File "{fn}" exists', file=sys.stderr)
-            exit()
+            exit(1)
 
         normalized = self.wf / np.max(np.abs(self.wf))
 
@@ -57,7 +57,7 @@ class Wt:
 
         if os.path.exists(fn):
             print(f'File "{fn}" exists', file=sys.stderr)
-            exit()
+            exit(1)
 
         with open(fn, "wb") as file:
             header = bytearray(12)

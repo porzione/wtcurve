@@ -37,35 +37,48 @@ We have help:
 ```text
 $ wtcurve --help
 
-usage: wtcurve [-h] [-w NUM_WAVEFORMS] [-s {16,32,64,128,256,512,1024,2048,4096}] [--bits {16,32}] [-m MID_WIDTH_PCT] [-o MID_YOFFSET] [-e {2,3,4,5,6,7,8,9}]
-               [-B] [-L] [--savgol SAVGOL] [--gauss GAUSS] [--bitcrush BITCRUSH] [--tanh TANH] [--graph] [--graph3d] [--wav] [--wt] [--h2p] [--gif]
-               [--dpi DPI] [-O] [--fullfn] [-D]
+usage: wtcurve [-h] [-D] [-w NUM_WAVEFORMS]
+               [-s {16,32,64,128,256,512,1024,2048,4096}] [--16]
+               [-m MID_WIDTH_PCT] [-o MID_YOFFSET] [-e {2,3,4,5,6,7,8,9}] [-B]
+               [-L] [--savgol SAVGOL] [--gauss GAUSS] [--bitcrush BITCRUSH]
+               [--tanh TANH] [--graph] [--graph3d] [--png] [--wav] [--wt]
+               [--h2p] [--gif] [--dpi DPI] [--fontsize FONTSIZE] [-O]
+               [--fullfn]
 
 options:
   -h, --help            show this help message and exit
-  -w NUM_WAVEFORMS      Number of waveforms (256)
+  -D                    Enable debug mode
+
+Waveform options:
+  -w NUM_WAVEFORMS      Number of waveforms (default: 256)
   -s {16,32,64,128,256,512,1024,2048,4096}
-                        Number of samples in waveform (2048)
-  --bits {16,32}        Bit width (32)
-  -m MID_WIDTH_PCT      Middle part width in % (70)
-  -o MID_YOFFSET        Offset from y-axis in % (25)
-  -e {2,3,4,5,6,7,8,9}  Exponent of curve (5)
+                        Number of samples in waveform (default: 2048)
+  --16                  Make 16-bit wavetable (default: 32)
+  -m MID_WIDTH_PCT      Middle part width in % (default: 70)
+  -o MID_YOFFSET        Offset from y-axis in % (default: 25)
+  -e {2,3,4,5,6,7,8,9}  Exponent of curve (default: 5)
   -B                    Build Bezier curve instead of exponent
-  -L                    Direct line instead of curve
-  --savgol SAVGOL       Savitzky-Golay filter window_length_pct(1-100),polyorder, e.g. '51,3'
-  --gauss GAUSS         Gaussian filter, int sigma, e.g. 2
-  --bitcrush BITCRUSH   Bitcrush depth, int, e.g. 5
-  --tanh TANH           Hyperbolic tangent, float, e.g. 4.0
+  -L                    Use direct line instead of curve
+
+Filter options:
+  --savgol SAVGOL       Savitzky-Golay filter window_length_pct(%),polyorder,
+                        e.g. '51,3'
+  --gauss GAUSS         Gaussian filter int sigma, e.g. 2
+  --bitcrush BITCRUSH   Bitcrush int depth, e.g. 5
+  --tanh TANH           Hyperbolic float tangent, e.g. 4.0
+
+Output options:
   --graph               Plot graph
   --graph3d             Plot 3D graph
+  --png                 Save graph to png file
   --wav                 Save wav
   --wt                  Save wt (Bitwig/Surge)
   --h2p                 Save Zebra OSC h2p
   --gif                 Save gif animation
-  --dpi DPI             Graph/gif DPI (200)
+  --dpi DPI             Graph/gif DPI (default: 200)
+  --fontsize FONTSIZE   Graph/gif fontsize (default: 8)
   -O                    Open gif
   --fullfn              Add full info to file name
-  -D                    Debug
 ```
 
 Try to play with `-m` from 20 to 50, `-o` from 20 to 70, `-e` with indicated range. Check the graph with `--graph`, it will show first and last frames.
