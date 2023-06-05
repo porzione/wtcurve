@@ -3,6 +3,7 @@
 
 from argparser_config import setup_parser
 import numpy as np
+import math
 from scipy.signal import savgol_filter
 from scipy.ndimage import gaussian_filter1d
 import matplotlib.pyplot as plt
@@ -10,6 +11,7 @@ import matplotlib.animation as animation
 from mpl_toolkits.mplot3d import Axes3D
 import subprocess
 import libwt
+#from pprint import pprint
 
 
 def debug(msg):
@@ -28,14 +30,13 @@ def exp_curve(x1, y1, x2, y2, num_points):
 
     return y
 
-
 def bezier_curve(x1, y1, x2, y2, num_points):
     t_values = np.linspace(0.0, 1.0, num_points)
-    # pre-allocate to improve performance
     x_values = np.zeros(num_points)
     y_values = np.zeros(num_points)
     x = np.where(x1 < 0, x1, x2)
-    y = np.where(x1 < 0, y2, y1)
+    y = np.where(x1 < 0, y2, y1) * args.bezier
+    #print(f'args {args.bezier} -> {x},{y}')
 
     for i, t in enumerate(t_values):
         x_values[i] = (1 - t)**2 * x1 + 2 * (1 - t) * t * x + t**2 * x2
@@ -54,7 +55,7 @@ def line(x1, y1, x2, y2, num_points):
     return y_values
 
 
-def fmt_fn(ext, add=None):
+def fmt_fname(ext, add=None):
     fn = f'%dm_%dh_%s%s' % (args.mid_width_pct, args.mid_yoffset,
                             mtype, suffix)
     if ext in ['wav', 'wt']:
@@ -79,10 +80,11 @@ if not (args.wav or args.graph or args.graph3d or args.debug or
     print(f'What to do?\n\n{argp.format_help()}')
     exit()
 
-if args.bezier:
+if args.bezier is not None:
     curve_fn = bezier_curve
-    title = 'Bézier curve'
-    mtype = 'bz'
+    title = f'Bézier {args.bezier}'
+    fl = "F{:.4g}".format(args.bezier)
+    mtype = f'{fl}bz'
 elif args.direct:
     curve_fn = line
     title = 'Direct line'
@@ -159,6 +161,7 @@ for i in range(args.num_waveforms):
     if args.tanh:
         y = np.tanh(args.tanh * y)
     if args.dco:
+        # TODO: just experiments
         dc_offset = np.mean(y)
         y -= dc_offset
 
@@ -193,9 +196,10 @@ if args.graph:
     plt.grid(True)
     plt.legend(fontsize=args.fontsize)
     if args.png:
-        fn = fmt_fn('png', '2d')
+        fn = fmt_fname('png', '2d')
         plt.savefig(fn, dpi=args.dpi)
-    plt.show()
+    else:
+        plt.show()
 
 if args.graph3d:
     x = np.arange(wf.shape[1])
@@ -216,9 +220,10 @@ if args.graph3d:
         fontsize=args.fontsize)
     plt.subplots_adjust(bottom=0, top=1.03)
     if args.png:
-        fn = fmt_fn('png', '3d')
+        fn = fmt_fname('png', '3d')
         plt.savefig(fn, dpi=int(args.dpi*1.2), pad_inches=0)
-    plt.show()
+    else:
+        plt.show()
 
 if args.gif:
     pct1 = args.num_waveforms / 100
@@ -229,14 +234,14 @@ if args.gif:
         lines.append([line])
     ax.xaxis.set_ticklabels([])
     ax.set_ylabel('Amplitude', fontsize=args.fontsize)
-    param = '' if args.bezier or args.direct else f'e={args.exp} '
+    param = '' if (args.bezier is not None) or args.direct else f'e={args.exp} '
     ax.set_title(
         f'{title} {param}m={args.mid_width_pct}% '
         f'h={args.mid_yoffset}%',
         fontsize=args.fontsize)
     ax.grid(True)
     anim = animation.ArtistAnimation(fig, lines, interval=500, blit=True)
-    fn = fmt_fn('gif')
+    fn = fmt_fname('gif')
     print(f'saving: {fn}')
     anim.save(fn, writer='pillow', dpi=args.dpi)
     if args.open:
@@ -247,19 +252,19 @@ if args.gif:
             print(e.returncode, e.stdout, e.stderr)
 
 if args.wav:
-    fn = fmt_fn('wav')
+    fn = fmt_fname('wav')
     print(f'saving: {fn} {args.bitwidth} bit')
     wt = libwt.Wt(wf, args.bitwidth)
     wt.save_wav(fn)
 
 if args.wt:
-    fn = fmt_fn('wt')
+    fn = fmt_fname('wt')
     print(f'saving: {fn} {args.bitwidth} bit')
     wt = libwt.Wt(wf, args.bitwidth)
     wt.save_wt(fn)
 
 if args.h2p:
-    fn = fmt_fn('h2p')
+    fn = fmt_fname('h2p')
     print(f'saving: {fn}')
     wt = libwt.Wt(wf)
     wt.save_h2p(fn)

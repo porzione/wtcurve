@@ -11,6 +11,13 @@ wa=256
 # waveforms in simple tables
 wl=64
 
+echo bezier
+for (( b=1; b>=-9; b-- )); do
+	./wtcurve --fullfn -s $sa -w $wa -B$b --wav --gif
+	./wtcurve --fullfn -s $sa -w $wa -B$b --wt
+	./wtcurve -s $sa -w $wa -B$b --h2p
+done
+
 echo bitcrush
 for bitcrush in 3 4 5; do
   ./wtcurve --fullfn -s $sa -w $wa --bitcrush $bitcrush --wav --gif
@@ -33,28 +40,21 @@ gauss=40
 echo gauss=$gauss
 ./wtcurve --fullfn -s $sa -w $wa --gauss $gauss --wav --gif
 ./wtcurve --fullfn -s $sa -w $wa --gauss $gauss --wt --16
-./wtcurve --fullfn -s $sa -w $wa --gauss $gauss -B --wav --gif
-./wtcurve --fullfn -s $sa -w $wa --gauss $gauss -B --wt --16
 ./wtcurve --gauss $gauss --h2p
 
 savgol=10
 echo savgol=$savgol
 ./wtcurve --fullfn -s $sa -w $wa --savgol ${savgol},3 --wav --gif
 ./wtcurve --fullfn -s $sa -w $wa --savgol ${savgol},3 --wt --16
-./wtcurve --fullfn -s $sa -w $wa --savgol ${savgol},3 -B --wav --gif
-./wtcurve --fullfn -s $sa -w $wa --savgol ${savgol},3 -B --wt --16
 ./wtcurve -w $wa --savgol ${savgol},3 --h2p
 
 echo variable offset
 for o in 25 35; do
   ./wtcurve --fullfn -s $sa -w $wa -o $o --wav --gif
-  ./wtcurve --fullfn -s $sa -w $wa -o $o --wav -B --gif
   ./wtcurve --fullfn -s $sa -w $wl -o $o --wav -L --gif
   ./wtcurve --fullfn -s $sa -w $wa -o $o --wt --16
-  ./wtcurve --fullfn -s $sa -w $wa -o $o --wt -B --16
   ./wtcurve --fullfn -s $sa -w $wl -o $o --wt -L --16
   ./wtcurve -o $o --h2p
-  ./wtcurve -o $o --h2p -B
   ./wtcurve -o $o --h2p -L
 done
 
@@ -76,7 +76,7 @@ shopt -s extglob
 pat_ext="\.(\w+)$"
 pat_wa="([0-9]+)w"
 pat_sa="([0-9]+)s"
-pat_ty="_(dl|bz|[0-9]e)_"
+pat_ty="_(dl|[0-9F.-]+bz|[0-9]e)_?"
 for file in *.wav *.wt ; do
   echo FILE: $file
   if [[ $file =~ $pat_ext ]] ; then
@@ -90,13 +90,14 @@ for file in *.wav *.wt ; do
   fi
   if [[ $file =~ $pat_ty ]] ; then
     c_ty=${BASH_REMATCH[1]}
+    #echo c_ty: \"$c_ty\"
   fi
   #echo ext: $ext wa: $c_wa sa: $c_sa ty: $c_ty
-  case "$c_ty" in
+  case $c_ty in
     [0-9]e)
       ty_path="exp"
       ;;
-    bz)
+    *bz)
       ty_path="bezier"
       ;;
     dl)

@@ -8,10 +8,19 @@ def tuple_2int(value):
     try:
         items = [int(x) for x in value.split(",")]
         if len(items) != 2:
-            raise ArgumentTypeError("Tuple argument must contain 2 items separated by a comma")
+            raise ArgumentTypeError("Tuple argument must contain 2 ints separated by a comma")
         return tuple(items)
     except:
         raise ArgumentTypeError("Invalid tuple argument")
+
+#def tuple_2float(value):
+#    try:
+#        items = [float(x) for x in value.split(",")]
+#        if len(items) != 2:
+#            raise ArgumentTypeError("Tuple argument must contain 2 floats separated by a comma")
+#        return tuple(items)
+#    except:
+#        raise ArgumentTypeError("Invalid tuple argument")
 
 
 def setup_parser():
@@ -25,7 +34,7 @@ def setup_parser():
         "dpi": 200,
         "fontsize": 8,
         "exponent": 5,
-        "mid_width_pct": 70,
+        "mid_width_pct": 60,
         "mid_yoffset": 25
     }
 
@@ -50,7 +59,7 @@ def setup_parser():
                                help="Offset from y-axis in %% (default: %(default)s)")
     waveform_group.add_argument("-e", dest="exp", type=int, choices=range(2, 10), default=defaults['exponent'],
                                help="Exponent of curve (default: %(default)s)")
-    waveform_group.add_argument("-B", action='store_true', dest="bezier", help="Build Bezier curve instead of exponent")
+    waveform_group.add_argument("-B", dest="bezier", type=float, help="Bezier control points float multiplier")
     waveform_group.add_argument("-L", action='store_true', dest="direct", help="Use direct line instead of curve")
 
     # Filter options
@@ -59,7 +68,7 @@ def setup_parser():
     filter_group.add_argument("--gauss", dest="gauss", type=int, help="Gaussian filter int sigma, e.g. 2")
     filter_group.add_argument("--bitcrush", dest="bitcrush", type=int, help="Bitcrush int depth, e.g. 5")
     filter_group.add_argument("--tanh", dest="tanh", type=float, help="Hyperbolic float tangent, e.g. 4.0")
-    filter_group.add_argument("--dco", action='store_true', dest="dco", help="Apply DC offset")
+    filter_group.add_argument("--dco", action='store_true', dest="dco", help="Apply DC offset WIP!")
 
     # Output options
     output_group = argp.add_argument_group("Output options")
