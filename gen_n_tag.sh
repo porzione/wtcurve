@@ -1,8 +1,9 @@
 #!/bin/bash
 
+# destination paths for tagged files
 wav_path=/home/ftp/audio/Wavetables/WT1/My
 wt_path=~/Music/Bitwig/Library/Wavetables/WT1/My
-h2p_path=~/.u-he/Zebra2/Modules/Oscillator/My/
+h2p_path=~/.u-he/Zebra2/Modules/Oscillator/My
 # samples
 sa=2048
 # waveforms
@@ -20,45 +21,42 @@ done
 tanh=5
 o=5
 echo tanh=$tanh o=$o
-# need to correct offset
+# need smaller offset
 ./wtcurve --fullfn -s $sa -w $wa -o $o --tanh $tanh --wav --gif
 ./wtcurve --fullfn -s $sa -w $wa -o $o --tanh $tanh --wt --16
+./wtcurve --fullfn -s $sa -w $wa -o $o --tanh $tanh -L --wav --gif
+./wtcurve --fullfn -s $sa -w $wa -o $o --tanh $tanh -L --wt --16
 ./wtcurve --tanh $tanh -o $o --h2p
+./wtcurve --tanh $tanh -o $o --h2p -L
 
 gauss=40
 echo gauss=$gauss
 ./wtcurve --fullfn -s $sa -w $wa --gauss $gauss --wav --gif
 ./wtcurve --fullfn -s $sa -w $wa --gauss $gauss --wt --16
+./wtcurve --fullfn -s $sa -w $wa --gauss $gauss -B --wav --gif
+./wtcurve --fullfn -s $sa -w $wa --gauss $gauss -B --wt --16
 ./wtcurve --gauss $gauss --h2p
 
 savgol=10
 echo savgol=$savgol
 ./wtcurve --fullfn -s $sa -w $wa --savgol ${savgol},3 --wav --gif
 ./wtcurve --fullfn -s $sa -w $wa --savgol ${savgol},3 --wt --16
+./wtcurve --fullfn -s $sa -w $wa --savgol ${savgol},3 -B --wav --gif
+./wtcurve --fullfn -s $sa -w $wa --savgol ${savgol},3 -B --wt --16
 ./wtcurve -w $wa --savgol ${savgol},3 --h2p
 
 echo variable offset
-  for o in 25 35; do
-    ./wtcurve --fullfn -s $sa -w $wa -o $o --wav --gif
-    ./wtcurve --fullfn -s $sa -w $wa -o $o --wav -B --gif
-    ./wtcurve --fullfn -s $sa -w $wl -o $o --wav -L --gif
-    ./wtcurve --fullfn -s $sa -w $wa -o $o --wt --16
-    ./wtcurve --fullfn -s $sa -w $wa -o $o --wt -B --16
-    ./wtcurve --fullfn -s $sa -w $wl -o $o --wt -L --16
-    ./wtcurve -o $o --h2p
-    ./wtcurve -o $o --h2p -B
-    ./wtcurve -o $o --h2p -L
+for o in 25 35; do
+  ./wtcurve --fullfn -s $sa -w $wa -o $o --wav --gif
+  ./wtcurve --fullfn -s $sa -w $wa -o $o --wav -B --gif
+  ./wtcurve --fullfn -s $sa -w $wl -o $o --wav -L --gif
+  ./wtcurve --fullfn -s $sa -w $wa -o $o --wt --16
+  ./wtcurve --fullfn -s $sa -w $wa -o $o --wt -B --16
+  ./wtcurve --fullfn -s $sa -w $wl -o $o --wt -L --16
+  ./wtcurve -o $o --h2p
+  ./wtcurve -o $o --h2p -B
+  ./wtcurve -o $o --h2p -L
 done
-
-#echo variable o with gauss/savgol
-#for o in 25 35 50; do
-#  ./wtcurve --fullfn -s $sa -w $wa -o $o --wav --gif -L --gauss 1
-#  ./wtcurve --fullfn -s $sa -w $wa -o $o --wav --gif -L --savgol 10,3
-#  ./wtcurve --fullfn -s $sa -w $wl -o $o --wt --16 -L --gauss 1
-#  ./wtcurve --fullfn -s $sa -w $wl -o $o --wt --16 -L --savgol 10,3
-#  ./wtcurve -L --gauss 1 --h2p
-#  ./wtcurve -L --savgol 10,3 --h2p
-#done
 
 echo variable exp
 for e in {4..9}; do
@@ -68,6 +66,10 @@ for e in {4..9}; do
     ./wtcurve -e $e --h2p
   fi
 done
+
+test -d "$wav_path" || exit
+test -d "$wt_path" || exit
+test -d "$h2p_path" || exit
 
 echo tagging
 shopt -s extglob
