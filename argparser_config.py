@@ -39,14 +39,15 @@ def setup_parser():
     }
 
     # General options
-    argp.add_argument("-D", action="store_true", dest="debug", help="Enable debug mode")
+    argp.add_argument("-D", action="store_true", dest="debug", help="Print a lot of debug messages")
 
     # Waveform options
     waveform_group = argp.add_argument_group("Waveform options")
     waveform_group.add_argument("-w", dest="num_waveforms", type=int, default=defaults['num_waveforms'],
                                help="Number of waveforms (default: %(default)s)")
     waveform_group.add_argument(
-        "-s", dest="num_samples", type=int, choices=[2**i for i in range(4, 13)], default=defaults['num_samples'],
+        "-s", dest="num_samples", type=int,
+        choices=[2**i for i in range(4, 13)], default=defaults['num_samples'],
         help="Number of samples in waveform (default: %(default)s)"
     )
     waveform_group.add_argument(
@@ -59,12 +60,15 @@ def setup_parser():
                                help="Offset from y-axis in %% (default: %(default)s)")
     waveform_group.add_argument("-e", dest="exp", type=int, choices=range(2, 10), default=defaults['exponent'],
                                help="Exponent of curve (default: %(default)s)")
-    waveform_group.add_argument("-B", dest="bezier", type=float, help="Bezier control points float multiplier")
-    waveform_group.add_argument("-L", action='store_true', dest="direct", help="Use direct line instead of curve")
+    waveform_group.add_argument("-B", dest="bezier", type=float,
+                               help="Bezier control points float multiplier, best -9.0 to 4.0")
+    waveform_group.add_argument("-L", action='store_true', dest="direct",
+                               help="Use direct line instead of curve")
 
     # Filter options
     filter_group = argp.add_argument_group("Filter options")
-    filter_group.add_argument("--savgol", dest="savgol", type=tuple_2int, help="Savitzky-Golay filter window_length_pct(%%),polyorder, e.g. '51,3'")
+    filter_group.add_argument("--savgol", dest="savgol", type=tuple_2int,
+                              help="Savitzky-Golay filter window_length_pct(%%),polyorder, e.g. '51,3'")
     filter_group.add_argument("--gauss", dest="gauss", type=int, help="Gaussian filter int sigma, e.g. 2")
     filter_group.add_argument("--bitcrush", dest="bitcrush", type=int, help="Bitcrush int depth, e.g. 5")
     filter_group.add_argument("--tanh", dest="tanh", type=float, help="Hyperbolic float tangent, e.g. 4.0")
@@ -77,11 +81,15 @@ def setup_parser():
     output_group.add_argument("--png", action="store_true", dest="png", help="Save graph to png file")
     output_group.add_argument("--wav", action="store_true", dest="wav", help="Save wav")
     output_group.add_argument("--wt", action="store_true", dest="wt", help="Save wt (Bitwig/Surge)")
-    output_group.add_argument("--h2p", action="store_true", dest="h2p", help="Save Zebra OSC h2p")
+    output_group.add_argument("--h2p", action="store_true", dest="h2p",
+                              help="Save Zebra 2 OSC h2p, forced 128 samples / 16 waveforms")
     output_group.add_argument("--gif", action="store_true", dest="gif", help="Save gif animation")
-    output_group.add_argument("--dpi", dest="dpi", type=int, help="Graph/gif DPI (default: %(default)s)", default=defaults["dpi"])
-    output_group.add_argument("--fontsize", dest="fontsize", type=int, help="Graph/gif fontsize (default: %(default)s)", default=defaults["fontsize"])
+    output_group.add_argument("--dpi", dest="dpi", type=int,
+                              help="Graph/gif DPI (default: %(default)s)", default=defaults["dpi"])
+    output_group.add_argument("--fontsize", dest="fontsize", type=int,
+                              help="Graph/gif fontsize (default: %(default)s)", default=defaults["fontsize"])
     output_group.add_argument("-O", action="store_true", dest="open", help="Open gif")
-    output_group.add_argument("--fullfn", action="store_true", dest="fullname", help="Add full info to file name")
+    output_group.add_argument("--fullfn", action="store_true", dest="fullname",
+                              help="Add full info to file name")
 
     return argp

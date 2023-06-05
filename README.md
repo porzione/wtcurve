@@ -47,7 +47,7 @@ usage: wtcurve [-h] [-D] [-w NUM_WAVEFORMS]
 
 options:
   -h, --help            show this help message and exit
-  -D                    Enable debug mode
+  -D                    Print a lot of debug messages
 
 Waveform options:
   -w NUM_WAVEFORMS      Number of waveforms (default: 256)
@@ -57,7 +57,8 @@ Waveform options:
   -m MID_WIDTH_PCT      Middle part width in % (default: 60)
   -o MID_YOFFSET        Offset from y-axis in % (default: 25)
   -e {2,3,4,5,6,7,8,9}  Exponent of curve (default: 5)
-  -B BEZIER             Bezier control points float multiplier
+  -B BEZIER             Bezier control points float multiplier, best -9.0 to
+                        4.0
   -L                    Use direct line instead of curve
 
 Filter options:
@@ -74,7 +75,8 @@ Output options:
   --png                 Save graph to png file
   --wav                 Save wav
   --wt                  Save wt (Bitwig/Surge)
-  --h2p                 Save Zebra OSC h2p
+  --h2p                 Save Zebra 2 OSC h2p, forced 128 samples / 16
+                        waveforms
   --gif                 Save gif animation
   --dpi DPI             Graph/gif DPI (default: 200)
   --fontsize FONTSIZE   Graph/gif fontsize (default: 8)
