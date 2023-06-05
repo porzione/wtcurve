@@ -55,48 +55,19 @@ def line(x1, y1, x2, y2, num_points):
 
 
 def fmt_fn(ext, add=None):
-    if ext == 'wav':
-        fn = f'%dm_%dh_%s{suffix}' % (
-                 args.mid_width_pct,
-                 args.mid_yoffset,
-                 mtype)
-        if args.fullname:
-            fn = f'{fn}_%ds_%dw' % (
-                args.num_samples,
-                args.num_waveforms)
-    elif ext == 'wt':
-        fn = f'%dm_%dh_%s{suffix}' % (
-                 args.mid_width_pct,
-                 args.mid_yoffset,
-                 mtype)
-        if args.fullname:
-            fn = f'{fn}_%ds_%dw' % (
-                args.num_samples,
-                args.num_waveforms)
-    elif ext == 'h2p':
-        fn = f'%dm_%dh_%s{suffix}' % (
-                 args.mid_width_pct,
-                 args.mid_yoffset,
-                 mtype)
+    fn = f'%dm_%dh_%s%s' % (args.mid_width_pct, args.mid_yoffset,
+                            mtype, suffix)
+    if ext in ['wav', 'wt']:
         if args.fullname:
             fn = f'{fn}_%ds_%dw' % (
                 args.num_samples,
                 args.num_waveforms)
     elif ext == 'gif':
-        fn = '%dm_%dh_%s' % (
-                args.mid_width_pct,
-                args.mid_yoffset,
-                mtype)
-        fn = f'{fn}{suffix}_anim'
-    elif ext == 'png':
-        fn = '%dm_%dh_%s' % (
-                args.mid_width_pct,
-                args.mid_yoffset,
-                mtype)
-        fn += f'_{add}' if add else ''
-        fn = f'{fn}{suffix}'
-    else:
+        fn = f'{fn}_anim'
+    elif ext not in ['png', 'h2p']:
         exit(1)
+
+    fn += f'_{add}' if add else ''
     return f'{fn}.{ext}'
 
 
@@ -132,7 +103,10 @@ if args.bitcrush:
     suffix = f'{suffix}_bc{args.bitcrush}'
 if args.tanh:
     title = f'{title} tanh={args.tanh}'
-    suffix = f'{suffix}_tanh{args.tanh}'
+    suffix = f'{suffix}_tanh{str(args.tanh).replace(".","-")}'
+if args.dco:
+    title = f'{title} dco'
+    suffix = f'{suffix}_dco'
 
 if args.h2p:
     args.num_samples = 128
@@ -184,15 +158,20 @@ for i in range(args.num_waveforms):
         y = np.round(y * max_val) / max_val
     if args.tanh:
         y = np.tanh(args.tanh * y)
+    if args.dco:
+        dc_offset = np.mean(y)
+        y -= dc_offset
 
 
     wf[i] = y
 
-np.set_printoptions(linewidth=100, precision=2, suppress=True)
 
 if args.debug:
-    print(wf)
+    np.set_printoptions(threshold=np.inf, precision=None, suppress=True)
+    print('full wavetable:', wf)
     exit()
+
+np.set_printoptions(linewidth=100, precision=2, suppress=True)
 
 plt.rcParams['xtick.labelsize'] = args.fontsize
 plt.rcParams['ytick.labelsize'] = args.fontsize
