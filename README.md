@@ -41,8 +41,8 @@ usage: wtcurve [-h] [-D] [-w NUM_WAVEFORMS]
                [-s {16,32,64,128,256,512,1024,2048,4096}] [--16]
                [-m MID_WIDTH_PCT] [-o MID_YOFFSET] [-e {2,3,4,5,6,7,8,9}] [-B]
                [-L] [--savgol SAVGOL] [--gauss GAUSS] [--bitcrush BITCRUSH]
-               [--tanh TANH] [--graph] [--graph3d] [--png] [--wav] [--wt]
-               [--h2p] [--gif] [--dpi DPI] [--fontsize FONTSIZE] [-O]
+               [--tanh TANH] [--dco] [--graph] [--graph3d] [--png] [--wav]
+               [--wt] [--h2p] [--gif] [--dpi DPI] [--fontsize FONTSIZE] [-O]
                [--fullfn]
 
 options:
@@ -66,6 +66,7 @@ Filter options:
   --gauss GAUSS         Gaussian filter int sigma, e.g. 2
   --bitcrush BITCRUSH   Bitcrush int depth, e.g. 5
   --tanh TANH           Hyperbolic float tangent, e.g. 4.0
+  --dco                 Apply DC offset
 
 Output options:
   --graph               Plot graph
@@ -81,14 +82,12 @@ Output options:
   --fullfn              Add full info to file name
 ```
 
-Try to play with `-m` from 20 to 50, `-o` from 20 to 70, `-e` with indicated range. Check the graph with `--graph`, it will show first and last frames.
-
 ## wttag
 
 To ensure compatibility with most synthesizers, wavetables need to be tagged with the wttag script, using the same -w and -s values as specified for the wtcurve. This script adds a WAV chunk to the WAV file, indicating the number of waveforms or samples based on the chunk type. In most cases, using --clm should work fine. Please note that I am unable to test the output WAVs with Serum as I don't have access to it. Example:
 
 ```text
-wttag -s 2048 -w 256 -i wtc_20m_20h_5e_2048s_256w.wav -o wtv_clm.wav --clm
+wttag -s 2048 -w 256 -i 70m_25h_5e_2048s_256w.wav -o 70m_25h_5e.wav --clm
 ```
 
 ### Screenshots
