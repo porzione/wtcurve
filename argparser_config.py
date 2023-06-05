@@ -59,6 +59,7 @@ def setup_parser():
     filter_group.add_argument("--gauss", dest="gauss", type=int, help="Gaussian filter int sigma, e.g. 2")
     filter_group.add_argument("--bitcrush", dest="bitcrush", type=int, help="Bitcrush int depth, e.g. 5")
     filter_group.add_argument("--tanh", dest="tanh", type=float, help="Hyperbolic float tangent, e.g. 4.0")
+    filter_group.add_argument("--dco", action='store_true', dest="dco", help="Apply DC offset")
 
     # Output options
     output_group = argp.add_argument_group("Output options")
