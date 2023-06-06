@@ -2,9 +2,10 @@
 # -*- coding: utf-8 -*-
 
 from argparse import ArgumentParser
-import numpy as np
 import struct
 import os
+import sys
+import numpy as np
 # from hexdump import hexdump
 
 TAGS = {
@@ -15,18 +16,15 @@ TAGS = {
 
 
 class Chunk:
+    """ create wavetable chunks """
 
-    DESCRIPTION = 'github.com/porzione/wtcurve'
+    DESCR = 'github.com/porzione/wtcurve'
 
     def __init__(self, num_waveforms, num_samples):
 
         self.num_waveforms = num_waveforms
         self.num_samples = num_samples
-        self.description = '%s w:%s s:%s' % (
-                Chunk.DESCRIPTION,
-                num_waveforms,
-                num_samples
-        )
+        self.description = f'{Chunk.DESCR} w:{num_waveforms} s:{num_samples}'
         print(f'description: {self.description}')
 
     def mk_uhe(self):
@@ -43,9 +41,9 @@ class Chunk:
 
     def mk_surge(self):
         chunk = bytearray(16)
-        chunk[:4]    = TAGS['surge']
-        chunk[4:8]   = struct.pack('<I', 8)
-        chunk[8:12]  = struct.pack('<I', 1)
+        chunk[:4] = TAGS['surge']
+        chunk[4:8] = struct.pack('<I', 8)
+        chunk[8:12] = struct.pack('<I', 1)
         chunk[12:16] = struct.pack('<I', self.num_samples)
         return chunk
 
@@ -57,8 +55,6 @@ class Chunk:
             ck_da += b'\0'
         chunk = ck_id + struct.pack('<I', ck_sz) + ck_da
         return chunk
-
-    # TODO: def mk_crve(self)
 
 
 argp = ArgumentParser()
@@ -80,15 +76,15 @@ args = argp.parse_args()
 
 if not os.path.isfile(args.src_file):
     print(f'Source file "{args.src_file}" not exists or not file.')
-    exit(1)
+    sys.exit(1)
 
 if os.path.isfile(args.dst_file) and not args.ov_file:
     print(f'Destination file "{args.dst_file}" exists.')
-    exit(2)
+    sys.exit(2)
 
 if os.path.isfile(args.dst_file) and os.path.samefile(args.src_file, args.dst_file):
     print('Source and destination are the same file')
-    exit(3)
+    sys.exit(3)
 
 dst_path = os.path.dirname(args.dst_file)
 if not os.path.isdir(dst_path) and args.mkdir:
@@ -102,56 +98,55 @@ with open(args.src_file, 'rb') as src:
     data = src.read(12)
     riff, size, fformat = struct.unpack('<4sI4s', data)
     print(f'RIFF header: {riff}, size: {size}, format: {fformat}')
-    dst = open(args.dst_file, 'wb')
-    dst.write(data)
-    found_chunks = []
-    while True:
-        try:
-            head = src.read(8)
-            chid, size = struct.unpack('<4sI', head)
-            found_chunks.append(chid)
-            #print(f'found_chunks: {found_chunks}')
-            print(f'chunk id: {chid}, size: {size}')
-            data = bytearray(src.read(size)) # change fmt
-            print(f'read size: {len(data)}')
-            # TODO: use skip tag arg
-            if chid in [b'PEAK', b'fact']:
-                continue
-            elif chid == b'fmt ':
-                # 2/0,1 2/2,3 4/4,7 4/8,11 2/12,13 2/14,15
-                data[8:12] = struct.pack('<I', 0)  # zero rate
-                fmt, ch, sr, br, ba, bits = struct.unpack('<HHIIHH', data[:16])
-                print(f'fmt: {fmt}, ch: {ch}, sr: {sr}, br: {br}, '
-                      f'ba: {ba}, bits: {bits}')
-            elif chid == b'data':
-                # write new chunks before data
-                if args.tag_surge:
-                    if TAGS['surge'] in found_chunks and not args.ov_tags:
-                        print('skip surge')
-                    else:
-                        print('write surge')
-                        dst.write(lch.mk_surge())
-                if args.tag_uhe:
-                    if TAGS['uhe'] in found_chunks and not args.ov_tags:
-                        print('skip uhe')
-                    else:
-                        print('write uhe')
-                        dst.write(lch.mk_uhe())
-                if args.tag_clm:
-                    if TAGS['clm'] in found_chunks and not args.ov_tags:
-                        print('skip clm')
-                    else:
-                        print('write clm')
-                        dst.write(lch.mk_clm())
-            dst.write(head)
-            dst.write(data)
+    # dst = open(args.dst_file, 'wb')
+    with open(args.dst_file, 'wb') as dst:
+        dst.write(data)
+        found_chunks = []
+        while True:
+            try:
+                head = src.read(8)
+                chid, size = struct.unpack('<4sI', head)
+                found_chunks.append(chid)
+                # print(f'found_chunks: {found_chunks}')
+                print(f'chunk id: {chid}, size: {size}')
+                data = bytearray(src.read(size))  # change fmt
+                print(f'read size: {len(data)}')
+                if chid in [b'PEAK', b'fact'] and not args.all_tags:
+                    continue
+                if chid == b'fmt ':
+                    data[8:12] = struct.pack('<I', 0)  # zero rate
+                    fmt, ch, sr, br, ba, bits = struct.unpack('<HHIIHH', data[:16])
+                    print(f'fmt: {fmt}, ch: {ch}, sr: {sr}, br: {br}, '
+                          f'ba: {ba}, bits: {bits}')
+                elif chid == b'data':
+                    # write new chunks before data
+                    if args.tag_surge:
+                        if TAGS['surge'] in found_chunks and not args.ov_tags:
+                            print('skip surge')
+                        else:
+                            print('write surge')
+                            dst.write(lch.mk_surge())
+                    if args.tag_uhe:
+                        if TAGS['uhe'] in found_chunks and not args.ov_tags:
+                            print('skip uhe')
+                        else:
+                            print('write uhe')
+                            dst.write(lch.mk_uhe())
+                    if args.tag_clm:
+                        if TAGS['clm'] in found_chunks and not args.ov_tags:
+                            print('skip clm')
+                        else:
+                            print('write clm')
+                            dst.write(lch.mk_clm())
+                dst.write(head)
+                dst.write(data)
 
-        except struct.error:
-            break
+            except struct.error:
+                break
 
-    # update size in header
-    dst_size = os.fstat(dst.fileno()).st_size
-    print(dst_size)
-    dst.seek(4)
-    dst.write((dst_size - 8).to_bytes(4, 'little'))
-    dst.close()
+        # update size in header
+        dst_size = os.fstat(dst.fileno()).st_size
+        # print(dst_size)
+        dst.seek(4)
+        dst.write((dst_size - 8).to_bytes(4, 'little'))
+        dst.close()

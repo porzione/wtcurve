@@ -1,271 +1,306 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from argparser_config import setup_parser
+import subprocess
+import sys
 import numpy as np
-import math
 from scipy.signal import savgol_filter
 from scipy.ndimage import gaussian_filter1d
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-from mpl_toolkits.mplot3d import Axes3D
-import subprocess
-import libwt
+from matplotlib import animation
+from argparser_config import setup_parser
+import wtfile
 #from pprint import pprint
 
 
-def debug(msg):
-    if args.debug:
-        print(msg)
+class WtCurve:
+    """ wavetable curve: compute data, save files """
+
+    def __init__(self):
+
+        argp = setup_parser()
+        self.args = argp.parse_args()
+
+        if not (self.args.wav or self.args.graph or self.args.graph3d or
+                self.args.debug or self.args.gif or self.args.h2p or self.args.wt):
+            print(f'What to do?\n\n{argp.format_help()}')
+            sys.exit()
+
+        self.dbg = self.args.debug
+
+        if self.args.bezier is not None:
+            self.curve_fn = self.bezier_curve
+            self.title = f'Bézier {self.args.bezier}'
+            fl = f"F{self.args.bezier:.4g}"
+            self.mtype = f'{fl}bz'
+        elif self.args.direct:
+            self.curve_fn = self.line
+            self.title = 'Direct line'
+            self.mtype = 'dl'
+        else:
+            self.curve_fn = self.exp_curve
+            self.title = 'Exponential curve'
+            self.mtype = f'{self.args.exp}e'
+        self.suffix = ''
+        if self.args.savgol:
+            self.title = f'{self.title} savgol={self.args.savgol}'
+            self.suffix = f'{self.suffix}_sg{self.args.savgol[0]}-{self.args.savgol[1]}'
+        if self.args.gauss:
+            self.title = f'{self.title} gauss={self.args.gauss}'
+            self.suffix = f'{self.suffix}_ga{self.args.gauss}'
+        if self.args.bitcrush:
+            self.title = f'{self.title} bitcrush={self.args.bitcrush}'
+            self.suffix = f'{self.suffix}_bc{self.args.bitcrush}'
+        if self.args.tanh:
+            self.title = f'{self.title} tanh={self.args.tanh}'
+            self.suffix = f'{self.suffix}_tanh{str(self.args.tanh).replace(".","-")}'
+        if self.args.dco:
+            self.title = f'{self.title} dco'
+            self.suffix = f'{self.suffix}_dco'
+
+        if self.args.h2p:
+            self.num_samples = 128
+            self.num_waveforms = 16
+        else:
+            self.num_samples = self.args.num_samples
+            self.num_waveforms = self.args.num_waveforms
+
+        self.mid_samples = int((self.args.mid_width_pct / 100) * self.num_samples)
+        self.mid_samples -= self.mid_samples % 2
+        self.debug(f'mid_samples: {self.mid_samples} '
+                    '({self.args.mid_width_pct}% of {self.num_samples})')
+
+        self.mid_widths = np.round(self.mid_samples * np.arange(self.num_waveforms) /
+                              (self.num_waveforms - 1)).astype(int)
+        self.mid_widths -= self.mid_widths % 2
+        self.debug(f'mid_widths: {self.mid_widths}')
+
+        self.mid_yoffset = self.args.mid_yoffset * 0.01
+        self.debug(f'mid_yoffset: {self.mid_yoffset}')
+
+        self.wt = []
+
+    def debug(self, msg):
+        """ optional debug message helper """
+        if self.dbg:
+            print(msg)
+
+    def exp_curve(self, x1, y1, x2, y2, num_points):
+        """ exponential curve with fixed start and end """
+        self.debug(f'curve: {x1} {y1} {x2} {y2} {num_points}')
+        x = np.linspace(x1, x2, num_points)
+        y = y1 + (y2 - y1) * (np.exp(self.args.exp * (x - x1)) - 1) / \
+            (np.exp(self.args.exp * (x2 - x1)) - 1)
+        if x1 < 0:
+            y_rotated = y2 - (y - y1)
+            return y_rotated[::-1]
+
+        return y
+
+    def bezier_curve(self, x1, y1, x2, y2, num_points):
+        """
+        bezier curve with fixed start and end
+        args.bezier is also used
+        """
+        t_values = np.linspace(0.0, 1.0, num_points)
+        x_values = np.zeros(num_points)
+        y_values = np.zeros(num_points)
+        x = np.where(x1 < 0, x1, x2)
+        y = np.where(x1 < 0, y2, y1) * self.args.bezier
+        #print(f'args {self.args.bezier} -> {x},{y}')
+
+        for i, t in enumerate(t_values):
+            x_values[i] = (1 - t)**2 * x1 + 2 * (1 - t) * t * x + t**2 * x2
+            y_values[i] = (1 - t)**2 * y1 + 2 * (1 - t) * t * y + t**2 * y2
+
+        return y_values
+
+    def line(self, x1, y1, x2, y2, num_points):
+        """ just direct line """
+        self.debug(f'line: {x1} {y1} {x2} {y2} {num_points}')
+
+        if x1 == x2:
+            y_values = np.linspace(y1, y2, num_points)
+        else:
+            x_values = np.linspace(x1, x2, num_points)
+            y_values = y1 + ((y2 - y1) / (x2 - x1)) * (x_values - x1)
+        return y_values
+
+    def fmt_fname(self, ext, add=None):
+        """ format file name for saving """
+        fname = f'{self.args.mid_width_pct}m_{self.args.mid_yoffset}h_{self.mtype}{self.suffix}'
+        if ext in ['wav', 'wt']:
+            if self.args.fullname:
+                fname = f'{fname}_{self.num_samples}s_{self.num_waveforms}w'
+        elif ext == 'gif':
+            fname = f'{fname}_anim'
+        elif ext not in ['png', 'h2p']:
+            raise ValueError(f'Bad file ext: {ext}')
+
+        fname += f'_{add}' if add else ''
+        return f'{fname}.{ext}'
+
+    def mk_graph(self):
+        x = np.linspace(0, 100, self.num_samples)
+        plt.xticks(np.arange(min(x), max(x)+1, 25))
+        plt.plot(x,self.wt[0], 'm-', label='first waveform')
+        plt.plot(x,self.wt[-1], 'c-', label='last waveform')
+        ax = plt.gca()
+        ax.xaxis.set_ticklabels([])
+        plt.ylabel('Amplitude', fontsize=self.args.fontsize)
+        plt.title(
+            f'{self.title} e={self.args.exp} m={self.args.mid_width_pct}% '
+            f'h={self.mid_yoffset}% '
+            f's={self.num_samples} w={self.num_waveforms}',
+            fontsize=self.args.fontsize)
+        plt.grid(True)
+        plt.legend(fontsize=self.args.fontsize)
+        if self.args.png:
+            fn = self.fmt_fname('png', '2d')
+            plt.savefig(fn, dpi=self.args.dpi)
+        else:
+            plt.show()
+
+    def mk_graph3d(self):
+        x = np.arange(self.wt.shape[1])
+        y = np.arange(self.wt.shape[0])
+        x, y = np.meshgrid(x, y)
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        ax.plot_surface(x, y, self.wt, cmap='twilight')
+        ax.view_init(elev=20, azim=250)
+        ax.grid(False)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_zticks([])
+        plt.title(
+            f'{self.title} e={self.args.exp} m={self.args.mid_width_pct}% '
+            f'h={self.mid_yoffset}%',
+            y=0.95,
+            fontsize=self.args.fontsize)
+        plt.subplots_adjust(bottom=0, top=1.03)
+        if self.args.png:
+            fn = self.fmt_fname('png', '3d')
+            plt.savefig(fn, dpi=int(self.args.dpi*1.2), pad_inches=0)
+        else:
+            plt.show()
+
+    def mk_gif(self):
+        pct1 = self.num_waveforms / 100
+        fig, ax = plt.subplots()
+        lines = []
+        for pct in range(0, 100, 20):
+            line, = ax.plot(self.wt[int(pct*pct1)], 'm-')
+            lines.append([line])
+        ax.xaxis.set_ticklabels([])
+        ax.set_ylabel('Amplitude', fontsize=self.args.fontsize)
+        if (self.args.bezier is not None) or self.args.direct:
+            param = ''
+        else:
+            param = f'e={self.args.exp} '
+        ax.set_title(
+            f'{self.title} {param}m={self.args.mid_width_pct}% '
+            f'h={self.mid_yoffset}%',
+            fontsize=self.args.fontsize)
+        ax.grid(True)
+        anim = animation.ArtistAnimation(fig, lines, interval=500, blit=True)
+        fn = self.fmt_fname('gif')
+        print(f'saving: {fn}')
+        anim.save(fn, writer='pillow', dpi=self.args.dpi)
+        if self.args.open:
+            try:
+                cmd = f'mimeopen {fn}'
+                subprocess.run(cmd, shell=True, capture_output=True, text=True,
+                               check=False)
+            except subprocess.CalledProcessError as e:
+                print(e.returncode, e.stdout, e.stderr)
+
+    def mk_wav(self):
+        fn = self.fmt_fname('wav')
+        print(f'saving: {fn} {self.args.bitwidth} bit')
+        wt = wtfile.Wt(self.wt, self.args.bitwidth)
+        wt.save_wav(fn)
+
+    def mk_wt(self):
+        fn = self.fmt_fname('wt')
+        print(f'saving: {fn} {self.args.bitwidth} bit')
+        wt = wtfile.Wt(self.wt, self.args.bitwidth)
+        wt.save_wt(fn)
+
+    def mk_h2p(self):
+        fn = self.fmt_fname('h2p')
+        print(f'saving: {fn}')
+        wt = wtfile.Wt(self.wt)
+        wt.save_h2p(fn)
+
+    def generate(self):
+        self.wt = np.zeros((self.num_waveforms, self.num_samples))
+        self.debug(f'wt shape: {self.wt.shape}')
+        xoffsets = np.linspace(0, self.args.mid_width_pct / 100, self.num_waveforms)
+
+        for i in range(self.num_waveforms):
+            cx = xoffsets[i]
+            self.debug(f'cx: {cx}')
+
+            curve_len = self.num_samples // 2 - self.mid_widths[i] // 2
+            self.debug(
+                f'i: {i} curve_len: {curve_len}, mw: {self.mid_widths[i]}, '
+                f'sum: {curve_len*2+self.mid_widths[i]}')
+
+            ya1 = self.curve_fn(-1, -1, -cx, -self.mid_yoffset, curve_len)
+            self.debug(f'ya1: {ya1} ({len(ya1)})')
+            ya2 = self.curve_fn(cx, self.mid_yoffset, 1, 1, curve_len)
+            self.debug(f'ya2: {ya2} ({len(ya2)})')
+            ym = self.line(-cx, -self.mid_yoffset, cx, self.mid_yoffset, self.mid_widths[i])
+            self.debug(f'ym: {ym} ({len(ym)})')
+            y = np.concatenate((ya1, ym, ya2))
+            self.debug(f'y: {y} {y.shape}')
+            if self.args.savgol:
+                if not self.args.savgol[0] in range(1,100):
+                    raise ValueError('savgol window should be in range 1-100%')
+                wlen = int(self.num_samples / 100 * self.args.savgol[0])
+                y = savgol_filter(y, window_length=wlen, polyorder=self.args.savgol[1])
+            if self.args.gauss:
+                y = gaussian_filter1d(y, sigma=self.args.gauss)
+            if self.args.bitcrush:
+                max_val = 2**(self.args.bitcrush) - 1
+                y = np.round(y * max_val) / max_val
+            if self.args.tanh:
+                y = np.tanh(self.args.tanh * y)
+            if self.args.dco:
+                # future experiments
+                dc_offset = np.mean(y)
+                y -= dc_offset
+
+            self.wt[i] = y
 
 
-def exp_curve(x1, y1, x2, y2, num_points):
-    debug(f'curve: {x1} {y1} {x2} {y2} {num_points}')
-    x = np.linspace(x1, x2, num_points)
-    y = y1 + (y2 - y1) * (np.exp(args.exp * (x - x1)) - 1) / \
-        (np.exp(args.exp * (x2 - x1)) - 1)
-    if x1 < 0:
-        y_rotated = y2 - (y - y1)
-        return y_rotated[::-1]
+        if self.dbg:
+            np.set_printoptions(threshold=np.inf, precision=None, suppress=True)
+            print('full wavetable:', self.wt)
+            sys.exit()
 
-    return y
+        np.set_printoptions(linewidth=100, precision=2, suppress=True)
 
-def bezier_curve(x1, y1, x2, y2, num_points):
-    t_values = np.linspace(0.0, 1.0, num_points)
-    x_values = np.zeros(num_points)
-    y_values = np.zeros(num_points)
-    x = np.where(x1 < 0, x1, x2)
-    y = np.where(x1 < 0, y2, y1) * args.bezier
-    #print(f'args {args.bezier} -> {x},{y}')
+        plt.rcParams['xtick.labelsize'] = self.args.fontsize
+        plt.rcParams['ytick.labelsize'] = self.args.fontsize
+        plt.rcParams['figure.dpi'] = self.args.dpi
 
-    for i, t in enumerate(t_values):
-        x_values[i] = (1 - t)**2 * x1 + 2 * (1 - t) * t * x + t**2 * x2
-        y_values[i] = (1 - t)**2 * y1 + 2 * (1 - t) * t * y + t**2 * y2
+        actions = {
+            'graph': self.mk_graph,
+            'graph3d': self.mk_graph3d,
+            'gif': self.mk_gif,
+            'wav': self.mk_wav,
+            'wt': self.mk_wt,
+            'h2p': self.mk_h2p
+        }
+        for arg, action in actions.items():
+            if getattr(self.args, arg):
+                action()
 
-    return y_values
+def __main__():
+    wtc = WtCurve()
+    wtc.generate()
 
-
-def line(x1, y1, x2, y2, num_points):
-    debug(f'line: {x1} {y1} {x2} {y2} {num_points}')
-    if x1 == x2:
-        y_values = np.linspace(y1, y2, num_points)
-    else:
-        x_values = np.linspace(x1, x2, num_points)
-        y_values = y1 + ((y2 - y1) / (x2 - x1)) * (x_values - x1)
-    return y_values
-
-
-def fmt_fname(ext, add=None):
-    fn = f'%dm_%dh_%s%s' % (args.mid_width_pct, args.mid_yoffset,
-                            mtype, suffix)
-    if ext in ['wav', 'wt']:
-        if args.fullname:
-            fn = f'{fn}_%ds_%dw' % (
-                args.num_samples,
-                args.num_waveforms)
-    elif ext == 'gif':
-        fn = f'{fn}_anim'
-    elif ext not in ['png', 'h2p']:
-        exit(1)
-
-    fn += f'_{add}' if add else ''
-    return f'{fn}.{ext}'
-
-
-argp = setup_parser()
-args = argp.parse_args()
-
-if not (args.wav or args.graph or args.graph3d or args.debug or
-        args.gif or args.h2p or args.wt):
-    print(f'What to do?\n\n{argp.format_help()}')
-    exit()
-
-if args.bezier is not None:
-    curve_fn = bezier_curve
-    title = f'Bézier {args.bezier}'
-    fl = "F{:.4g}".format(args.bezier)
-    mtype = f'{fl}bz'
-elif args.direct:
-    curve_fn = line
-    title = 'Direct line'
-    mtype = 'dl'
-else:
-    curve_fn = exp_curve
-    title = 'Exponential curve'
-    mtype = f'{args.exp}e'
-suffix=''
-if args.savgol:
-    title = f'{title} savgol={args.savgol}'
-    suffix = f'{suffix}_sg{args.savgol[0]}-{args.savgol[1]}'
-if args.gauss:
-    title = f'{title} gauss={args.gauss}'
-    suffix = f'{suffix}_ga{args.gauss}'
-if args.bitcrush:
-    title = f'{title} bitcrush={args.bitcrush}'
-    suffix = f'{suffix}_bc{args.bitcrush}'
-if args.tanh:
-    title = f'{title} tanh={args.tanh}'
-    suffix = f'{suffix}_tanh{str(args.tanh).replace(".","-")}'
-if args.dco:
-    title = f'{title} dco'
-    suffix = f'{suffix}_dco'
-
-if args.h2p:
-    args.num_samples = 128
-    args.num_waveforms = 16
-
-mid_samples = int((args.mid_width_pct / 100) * args.num_samples)
-mid_samples -= mid_samples % 2
-debug(f'mid_samples: {mid_samples} ({args.mid_width_pct}% of {args.num_samples})')
-
-mid_widths = np.round(mid_samples * np.arange(args.num_waveforms) /
-                      (args.num_waveforms - 1)).astype(int)
-mid_widths -= mid_widths % 2
-debug(f'mid_widths: {mid_widths}')
-
-mid_yoffset = args.mid_yoffset * 0.01
-# debug(f'mid_yoffset: {mid_yoffset}')
-
-wf = np.zeros((args.num_waveforms, args.num_samples))
-debug(f'wf shape: {wf.shape}')
-xoffsets = np.linspace(0, args.mid_width_pct / 100, args.num_waveforms)
-
-for i in range(args.num_waveforms):
-    cx = xoffsets[i]
-    debug(f'cx: {cx}')
-
-    curve_len = args.num_samples // 2 - mid_widths[i] // 2
-    debug(
-        f'i: {i} curve_len: {curve_len}, mw: {mid_widths[i]}, '
-        f'sum: {curve_len*2+mid_widths[i]}')
-
-    ya1 = curve_fn(-1, -1, -cx, -mid_yoffset, curve_len)
-    debug(f'ya1: {ya1} ({len(ya1)})')
-    ya2 = curve_fn(cx, mid_yoffset, 1, 1, curve_len)
-    debug(f'ya2: {ya2} ({len(ya2)})')
-    ym = line(-cx, -mid_yoffset, cx, mid_yoffset, mid_widths[i])
-    debug(f'ym: {ym} ({len(ym)})')
-    y = np.concatenate((ya1, ym, ya2))
-    debug(f'y: {y} {y.shape}')
-    if args.savgol:
-        if not args.savgol[0] in range(1,100):
-            print('savgol window should be in range 1-100%')
-            exit()
-        wlen = int(args.num_samples / 100 * args.savgol[0])
-        y = savgol_filter(y, window_length=wlen, polyorder=args.savgol[1])
-    if args.gauss:
-        y = gaussian_filter1d(y, sigma=args.gauss)
-    if args.bitcrush:
-        max_val = 2**(args.bitcrush) - 1
-        y = np.round(y * max_val) / max_val
-    if args.tanh:
-        y = np.tanh(args.tanh * y)
-    if args.dco:
-        # TODO: just experiments
-        dc_offset = np.mean(y)
-        y -= dc_offset
-
-
-    wf[i] = y
-
-
-if args.debug:
-    np.set_printoptions(threshold=np.inf, precision=None, suppress=True)
-    print('full wavetable:', wf)
-    exit()
-
-np.set_printoptions(linewidth=100, precision=2, suppress=True)
-
-plt.rcParams['xtick.labelsize'] = args.fontsize
-plt.rcParams['ytick.labelsize'] = args.fontsize
-plt.rcParams['figure.dpi'] = args.dpi
-
-if args.graph:
-    x = np.linspace(0, 100, args.num_samples)
-    plt.xticks(np.arange(min(x), max(x)+1, 25))
-    plt.plot(x,wf[0], 'm-', label='first waveform')
-    plt.plot(x,wf[-1], 'c-', label='last waveform')
-    ax = plt.gca()
-    ax.xaxis.set_ticklabels([])
-    plt.ylabel('Amplitude', fontsize=args.fontsize)
-    plt.title(
-        f'{title} e={args.exp} m={args.mid_width_pct}% '
-        f'h={args.mid_yoffset}% '
-        f's={args.num_samples} w={args.num_waveforms}',
-        fontsize=args.fontsize)
-    plt.grid(True)
-    plt.legend(fontsize=args.fontsize)
-    if args.png:
-        fn = fmt_fname('png', '2d')
-        plt.savefig(fn, dpi=args.dpi)
-    else:
-        plt.show()
-
-if args.graph3d:
-    x = np.arange(wf.shape[1])
-    y = np.arange(wf.shape[0])
-    x, y = np.meshgrid(x, y)
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    ax.plot_surface(x, y, wf, cmap='twilight')
-    ax.view_init(elev=20, azim=250)
-    ax.grid(False)
-    ax.set_xticks([])
-    ax.set_yticks([])
-    ax.set_zticks([])
-    plt.title(
-        f'{title} e={args.exp} m={args.mid_width_pct}% '
-        f'h={args.mid_yoffset}%',
-        y=0.95,
-        fontsize=args.fontsize)
-    plt.subplots_adjust(bottom=0, top=1.03)
-    if args.png:
-        fn = fmt_fname('png', '3d')
-        plt.savefig(fn, dpi=int(args.dpi*1.2), pad_inches=0)
-    else:
-        plt.show()
-
-if args.gif:
-    pct1 = args.num_waveforms / 100
-    fig, ax = plt.subplots()
-    lines = []
-    for pct in range(0, 100, 20):
-        line, = ax.plot(wf[int(pct*pct1)], 'm-')
-        lines.append([line])
-    ax.xaxis.set_ticklabels([])
-    ax.set_ylabel('Amplitude', fontsize=args.fontsize)
-    param = '' if (args.bezier is not None) or args.direct else f'e={args.exp} '
-    ax.set_title(
-        f'{title} {param}m={args.mid_width_pct}% '
-        f'h={args.mid_yoffset}%',
-        fontsize=args.fontsize)
-    ax.grid(True)
-    anim = animation.ArtistAnimation(fig, lines, interval=500, blit=True)
-    fn = fmt_fname('gif')
-    print(f'saving: {fn}')
-    anim.save(fn, writer='pillow', dpi=args.dpi)
-    if args.open:
-        try:
-            cmd = f'mimeopen {fn}'
-            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-        except subprocess.CalledProcessError as e:
-            print(e.returncode, e.stdout, e.stderr)
-
-if args.wav:
-    fn = fmt_fname('wav')
-    print(f'saving: {fn} {args.bitwidth} bit')
-    wt = libwt.Wt(wf, args.bitwidth)
-    wt.save_wav(fn)
-
-if args.wt:
-    fn = fmt_fname('wt')
-    print(f'saving: {fn} {args.bitwidth} bit')
-    wt = libwt.Wt(wf, args.bitwidth)
-    wt.save_wt(fn)
-
-if args.h2p:
-    fn = fmt_fname('h2p')
-    print(f'saving: {fn}')
-    wt = libwt.Wt(wf)
-    wt.save_h2p(fn)
-
+if __name__ == '__main__':
+    __main__()

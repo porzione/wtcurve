@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# pylint: disable=too-many-branches
 
 import struct
 import sys
@@ -7,12 +8,21 @@ import glob
 from os.path import isdir, isfile, join, getsize
 from hexdump import hexdump
 
+def unpack_fmt(data):
+    # audio_format, num_channels, sample_rate, byte_rate, block_align, bits_per_sample
+    unp = struct.unpack('<HHIIHH', data[:16])
+    keys = ['fmt', 'ch', 'sr', 'br', 'ba', 'bits']
+    return dict(zip(keys, unp))
+
+def unpack_riff(data):
+    unp = struct.unpack('<4sI4s', data)
+    keys = ['riff', 'wavsize', 'fformat']
+    return dict(zip(keys, unp))
 
 def read_chunks(file):
     with open(file, 'rb') as f:
         # Read the first 12 bytes, which should be the RIFF header
-        riff, wavsize, fformat = struct.unpack('<4sI4s', f.read(12))
-        print(f'header: {riff}, size: {wavsize}, format: {fformat}')
+        print(unpack_riff(f.read(12)))
 
         datac = datasz = 0
         samples = waveforms = 0
@@ -25,21 +35,16 @@ def read_chunks(file):
                 chid, size = struct.unpack('<4sI', raw_h)
                 data = f.read(size)
                 print(f'chunk id: {chid}, size: {size}')
+
                 if chid == b'fmt ':
                     try:
-                        # audio_format, num_channels, sample_rate, byte_rate,
-                        # block_align, bits_per_sample
-                        fmt, ch, sr, br, ba, bits = struct.unpack(
-                            '<HHIIHH', data[:16])
-                        print(f'fmt: {fmt}, ch: {ch}, sr: {sr}, br: {br}, '
-                              f'ba: {ba}, bits: {bits}')
+                        fmtd = unpack_fmt(data)
+                        print(f'fmt: {fmtd}')
                         if size > 16:
                             ext_size = struct.unpack('<H', data[16:18])
                             print(f'extension size: {ext_size}')
-                            # TODO: process extension data
-                    except Exception as e:
+                    except struct.error as e:
                         print("unpack fmt exception:", e)
-
                 elif chid == b'srge':
                     samples = struct.unpack('<H', data[4:6])[0]
                     # hexdump(data)
@@ -66,12 +71,12 @@ def read_chunks(file):
                 # print(f'ERR/END: ID: {chid}, size: {size}')
                 print(f'data chunks: {datac} size: {datasz}')
                 if waveforms > 0:
-                    print(f'w:{waveforms} s:{int(datasz/(waveforms*bits/8))}')
+                    print(f'w:{waveforms} s:{int(datasz/(waveforms*fmtd["bits"]/8))}')
                 elif samples > 0:
-                    print(f'w:{int(datasz//(samples*bits/8))} s:{samples}')
+                    print(f'w:{int(datasz//(samples*fmtd["bits"]/8))} s:{samples}')
                 break
 
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-exception-caught
                 print("exception occurred:", e)
                 break
 
@@ -80,10 +85,10 @@ if len(sys.argv) > 1:
     for inp in sys.argv[1:]:
         if isdir(inp):
             print(f'DIR: {inp}')
-            for f in glob.iglob(join(inp, '*.wav')):
-                print(f'FILE: {f}')
-                read_chunks(f)
+            for fi in glob.iglob(join(inp, '*.wav')):
+                print(f'FILE: {fi}')
+                read_chunks(fi)
 
-        elif isfile:
+        elif isfile(inp):
             print(f'FILE: {inp} size: {getsize(inp)}')
             read_chunks(inp)
