@@ -16,6 +16,7 @@ import wtfile
 class WtCurve:
     """ wavetable curve: compute data, save files """
 
+    # pylint: disable=too-many-statements
     def __init__(self):
 
         argp = setup_parser()
