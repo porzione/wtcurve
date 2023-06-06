@@ -2,7 +2,9 @@
 
 ## wtcurve
 
-wtcurve can generate symmetric waveforms using exponential function or bezier curve. The waveform has a linear central part, you can adjust the tilt of this part to custom angle using the `-m` option, it is the width of central line in percents. The script can also plot the graph with first and last frame, 3D graph with full wavetable or save an animated gif. By manipulating the parameters for Savitzky-Golay `--savgol` and Gaussian filters `--gauss`, bitcrush `--bitcrush` and Hyperbolic tangent `--tanh` one can obtain a wide range of waveforms. Direct line (`-L`) instead of a curve allows the generation of diverse sawtooths. Bezie `-B` will distort and clip the waveform when values are outside the range of -9 to 4. The intentional omission of the check allows for more freedom to experiment.
+wtcurve can generate symmetric waveforms using the exponential function or bezier curve. The waveform contains of a linear central part with adjustable width, which can be set in percentages using the `-m` option. The script can also plot the graph with the first and last frame, a 3D graph with the full wavetable, or an animated gif.
+
+By manipulating parameters such as Savitzky-Golay `--savgol`, Gaussian filter `--gauss`, bitcrush `--bitcrush`, hyperbolic tangent `--tanh`, and direct line `-L`, a wide range of waveforms can be achieved. Applying Bezier `-B` will distort and clip the waveform when values fall outside the range of -9 to 4. The intentional omission of the range check provides greater freedom for experimentation. However, it's important to note that many combinations of argument values may result in an invalid waveform.
 
 I have tested the 32-bit float WAV wavetables with the Linux versions of [Surge XT](https://surge-synthesizer.github.io/), [Bitwig Studio Grid](https://www.bitwig.com/the-grid/), [u-he Hive 2](https://u-he.com/products/hive/), and the [Vital](https://vital.audio/) software synthesizers. For compatibility reasons, it is recommended to leave the default number of samples as 2048 (do not use `-s` flag). Only Surge XT is able to load tagged wavetables with arbitrary number of samples. 16-bit int and 32-bit float wt wavetables tested with Surge XT and Bitwig.
 
@@ -28,7 +30,7 @@ I have tested the 32-bit float WAV wavetables with the Linux versions of [Surge 
 
 Defaults: 32 bit float WAV, 256 waveforms, 2048 samples.
 
-Requirements: Python 3 with [NumPy](https://numpy.org/install/), [SciPy](https://scipy.org/), [Matplotlib](https://matplotlib.org), [soundfile](https://github.com/bastibe/python-soundfile).
+Requirements: Python 3 with [NumPy](https://numpy.org/install/), [SciPy](https://scipy.org/), [Matplotlib](https://matplotlib.org), [soundfile](https://github.com/bastibe/python-soundfile). `wavchunks.py` scanner requires ancient [hexdump](https://pypi.org/project/hexdump/).
 
 Surely there are bugs here.
 
