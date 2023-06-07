@@ -11,7 +11,7 @@ wa=256
 # waveforms in simple tables
 wl=64
 
-echo bezier
+echo variable bezier
 for (( b=1; b>=-9; b-- )); do
 	./wtcurve --fullfn -s $sa -w $wa -B$b --wav --gif
 	./wtcurve --fullfn -s $sa -w $wa -B$b --wt
@@ -25,16 +25,12 @@ for bitcrush in 3 4 5; do
   ./wtcurve --bitcrush $bitcrush --h2p
 done
 
-tanh=5
-o=5
-echo tanh=$tanh o=$o
-# need smaller offset
-./wtcurve --fullfn -s $sa -w $wa -o $o --tanh $tanh --wav --gif
-./wtcurve --fullfn -s $sa -w $wa -o $o --tanh $tanh --wt --16
-./wtcurve --fullfn -s $sa -w $wa -o $o --tanh $tanh -L --wav --gif
-./wtcurve --fullfn -s $sa -w $wa -o $o --tanh $tanh -L --wt --16
-./wtcurve --tanh $tanh -o $o --h2p
-./wtcurve --tanh $tanh -o $o --h2p -L
+echo tanh
+for tanh in {2..5} ; do
+  ./wtcurve --fullfn -s $sa -w $wa --tanh $tanh --wav --gif
+  ./wtcurve --fullfn -s $sa -w $wa --tanh $tanh --wt --16
+  ./wtcurve --tanh $tanh --h2p
+done
 
 gauss=40
 echo gauss=$gauss
@@ -76,7 +72,7 @@ shopt -s extglob
 pat_ext="\.(\w+)$"
 pat_wa="([0-9]+)w"
 pat_sa="([0-9]+)s"
-pat_ty="_(dl|[0-9F.-]+bz|[0-9]e)_?"
+pat_ty="_(dl|[0-9F.-]+bz|[0-9F.-]+ht|[0-9]e)_?"
 for file in *.wav *.wt ; do
   echo FILE: $file
   if [[ $file =~ $pat_ext ]] ; then
@@ -99,6 +95,9 @@ for file in *.wav *.wt ; do
       ;;
     *bz)
       ty_path="bezier"
+      ;;
+    *ht)
+      ty_path="tanh"
       ;;
     dl)
       ty_path="dline"

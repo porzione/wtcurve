@@ -2,9 +2,9 @@
 
 ## wtcurve
 
-wtcurve can generate symmetric waveforms using the exponential function or bezier curve. The waveform contains of a linear central part with adjustable width, which can be set in percentages using the `-m` option. The script can also plot the graph with the first and last frame, a 3D graph with the full wavetable, or an animated gif.
+wtcurve can generate symmetric waveforms using the exponential function by default, hyperbolic tangent `--tanh` or bezier curve `-B`. The waveform contains of a linear central part with adjustable width, which can be set in percentages using the `-m` option. The script can also plot the graph with the first and last frame, 3D graph with the full wavetable, or animated gif.
 
-By manipulating parameters such as Savitzky-Golay `--savgol`, Gaussian filter `--gauss`, bitcrush `--bitcrush`, hyperbolic tangent `--tanh`, and direct line `-L`, a wide range of waveforms can be achieved. Applying Bezier `-B` will distort and clip the waveform when values fall outside the range of -9 to 4. The intentional omission of the range check provides greater freedom for experimentation. However, it's important to note that many combinations of argument values may result in an invalid waveform.
+By manipulating parameters such as Savitzky-Golay `--savgol`, Gaussian filter `--gauss`, bitcrush `--bitcrush`  and direct line `-L`, a wide range of waveforms can be achieved. Bezier will distort and clip the waveform when values fall outside the range of -9 to 4. The intentional omission of the range check provides greater freedom for experimentation. However, it's important to note that many combinations of argument values may result in an invalid waveform.
 
 I have tested the 32-bit float WAV wavetables with the Linux versions of [Surge XT](https://surge-synthesizer.github.io/), [Bitwig Studio Grid](https://www.bitwig.com/the-grid/), [u-he Hive 2](https://u-he.com/products/hive/), and the [Vital](https://vital.audio/) software synthesizers. For compatibility reasons, it is recommended to leave the default number of samples as 2048 (do not use `-s` flag). Only Surge XT is able to load tagged wavetables with arbitrary number of samples. 16-bit int and 32-bit float wt wavetables tested with Surge XT and Bitwig.
 
@@ -12,7 +12,7 @@ I have tested the 32-bit float WAV wavetables with the Linux versions of [Surge 
 
 ![Exponential](images/60m_25h_5e_3d.jpg "Exponential")
 
-![Hyperbolic tangent 3D](images/35m_5h_5e_tanh5-0_3d.jpg "Hyperbolic tangent")
+![Hyperbolic tangent 3D](images/35m_25h_F4ht_3d.jpg "Hyperbolic tangent")
 
 ![Exponential animation](images/60m_25h_5e_anim.gif "Exponential function")
 
@@ -42,8 +42,8 @@ $ wtcurve --help
 usage: wtcurve [-h] [-D] [-w NUM_WAVEFORMS]
                [-s {16,32,64,128,256,512,1024,2048,4096}] [--16]
                [-m MID_WIDTH_PCT] [-o MID_YOFFSET] [-e {2,3,4,5,6,7,8,9}]
-               [-B BEZIER] [-L] [--savgol SAVGOL] [--gauss GAUSS]
-               [--bitcrush BITCRUSH] [--tanh TANH] [--dco] [--graph]
+               [--tanh TANH] [-B BEZIER] [-L] [--savgol SAVGOL]
+               [--gauss GAUSS] [--bitcrush BITCRUSH] [--dco] [--graph]
                [--graph3d] [--png] [--wav] [--wt] [--h2p] [--gif] [--dpi DPI]
                [--fontsize FONTSIZE] [-O] [--fullfn]
 
@@ -59,16 +59,16 @@ Waveform options:
   -m MID_WIDTH_PCT      Middle part width in % (default: 60)
   -o MID_YOFFSET        Offset from y-axis in % (default: 25)
   -e {2,3,4,5,6,7,8,9}  Exponent of curve (default: 5)
+  --tanh TANH           Hyperbolic float tangent, e.g. 4.0
   -B BEZIER             Bezier control points float multiplier, best -9.0 to
                         4.0
   -L                    Use direct line instead of curve
 
 Filter options:
-  --savgol SAVGOL       Savitzky-Golay filter window_length_pct(%),polyorder,
-                        e.g. '51,3'
+  --savgol SAVGOL       Savitzky-Golay filter window_len(%),polyorder, e.g.
+                        51,3
   --gauss GAUSS         Gaussian filter int sigma, e.g. 2
   --bitcrush BITCRUSH   Bitcrush int depth, e.g. 5
-  --tanh TANH           Hyperbolic float tangent, e.g. 4.0
   --dco                 Apply DC offset WIP!
 
 Output options:
