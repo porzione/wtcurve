@@ -6,7 +6,7 @@ import struct
 import os
 import sys
 import numpy as np
-# from hexdump import hexdump
+
 
 TAGS = {
     'uhe': b'uhWT',

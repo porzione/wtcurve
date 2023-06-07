@@ -85,7 +85,7 @@ def setup_parser():
     filter_group.add_argument("--bitcrush", dest="bitcrush", type=int,
                               help="Bitcrush int depth, e.g. 5")
     filter_group.add_argument("--dco", action='store_true', dest="dco",
-                              help="Apply DC offset WIP!")
+                              help="DC offset WIP!")
 
     # Output options
     output_group = argp.add_argument_group("Output options")
