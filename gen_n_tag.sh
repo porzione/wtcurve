@@ -25,11 +25,13 @@ for bitcrush in 3 4 5; do
   ./wtcurve --bitcrush $bitcrush --h2p
 done
 
-echo tanh
-for tanh in {2..5} ; do
-  ./wtcurve --fullfn -s $sa -w $wa --tanh $tanh --wav --gif
-  ./wtcurve --fullfn -s $sa -w $wa --tanh $tanh --wt --16
-  ./wtcurve --tanh $tanh --h2p
+echo variable tanh
+for o in 25 35; do
+  for tanh in $(seq 2 2 8) ; do
+    ./wtcurve --fullfn -s $sa -w $wa -o $o --tanh $tanh --wav --gif
+    ./wtcurve --fullfn -s $sa -w $wa -o $o --tanh $tanh --wt --16
+    ./wtcurve --tanh $tanh -o $o --h2p
+  done
 done
 
 gauss=40
@@ -48,10 +50,13 @@ echo variable offset
 for o in 25 35; do
   ./wtcurve --fullfn -s $sa -w $wa -o $o --wav --gif
   ./wtcurve --fullfn -s $sa -w $wl -o $o --wav -L --gif
+  ./wtcurve --fullfn -s $sa -w $wa -o $o --wav -L --gauss 35 --gif
   ./wtcurve --fullfn -s $sa -w $wa -o $o --wt --16
   ./wtcurve --fullfn -s $sa -w $wl -o $o --wt -L --16
+  ./wtcurve --fullfn -s $sa -w $wa -o $o --wt -L --gauss 35 --16
   ./wtcurve -o $o --h2p
   ./wtcurve -o $o --h2p -L
+  ./wtcurve -o $o --h2p -L --gauss 35
 done
 
 echo variable exp
