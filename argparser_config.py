@@ -69,6 +69,8 @@ def setup_parser():
     waveform_group.add_argument("-e", dest="exp", type=int, choices=range(2, 10),
                                 default=defaults['exponent'],
                                 help="Exponent of curve (default: %(default)s)")
+    waveform_group.add_argument("--tanh", dest="tanh", type=float,
+                              help="Hyperbolic float tangent, e.g. 4.0")
     waveform_group.add_argument("-B", dest="bezier", type=float,
                                help="Bezier control points float multiplier, best -9.0 to 4.0")
     waveform_group.add_argument("-L", action='store_true', dest="direct",
@@ -82,8 +84,6 @@ def setup_parser():
                               help="Gaussian filter int sigma, e.g. 2")
     filter_group.add_argument("--bitcrush", dest="bitcrush", type=int,
                               help="Bitcrush int depth, e.g. 5")
-    filter_group.add_argument("--tanh", dest="tanh", type=float,
-                              help="Hyperbolic float tangent, e.g. 4.0")
     filter_group.add_argument("--dco", action='store_true', dest="dco",
                               help="Apply DC offset WIP!")
 

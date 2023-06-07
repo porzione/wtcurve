@@ -20,6 +20,7 @@ class WtCurve:
 
         argp = setup_parser()
         self.args = argp.parse_args()
+        # print(self.args) ; exit()
 
         if not (self.args.wav or self.args.graph or self.args.graph3d or
                 self.args.debug or self.args.gif or self.args.h2p or self.args.wt):
@@ -36,18 +37,21 @@ class WtCurve:
             print(msg)
 
     def _prepare_values(self):
-        if self.args.bezier is not None:
+        if self.args.bezier:
             self.curve_fn = self._bezier_curve
             self.title = f'Bézier {self.args.bezier}'
-            fl = f"F{self.args.bezier:.4g}"
-            self.mtype = f'{fl}bz'
+            self.mtype = f'F{self.args.bezier:.4g}bz'
+        elif self.args.tanh:
+            self.curve_fn = self._tanh_curve
+            self.title = f'Hyperbolic tangent {self.args.tanh}'
+            self.mtype = f'F{self.args.tanh:.4g}ht'
         elif self.args.direct:
             self.curve_fn = self._line
             self.title = 'Direct line'
             self.mtype = 'dl'
         else:
             self.curve_fn = self._exp_curve
-            self.title = 'Exponential curve'
+            self.title = f'Exponent {self.args.exp}'
             self.mtype = f'{self.args.exp}e'
         self.suffix = ''
         if self.args.savgol:
@@ -59,9 +63,6 @@ class WtCurve:
         if self.args.bitcrush:
             self.title = f'{self.title} bitcrush={self.args.bitcrush}'
             self.suffix = f'{self.suffix}_bc{self.args.bitcrush}'
-        if self.args.tanh:
-            self.title = f'{self.title} tanh={self.args.tanh}'
-            self.suffix = f'{self.suffix}_tanh{str(self.args.tanh).replace(".","-")}'
         if self.args.dco:
             self.title = f'{self.title} dco'
             self.suffix = f'{self.suffix}_dco'
@@ -111,13 +112,20 @@ class WtCurve:
         y_values = np.zeros(num_points)
         x = np.where(x1 < 0, x1, x2)
         y = np.where(x1 < 0, y2, y1) * self.args.bezier
-        #print(f'args {self.args.bezier} -> {x},{y}')
+        # print(f'args {self.args.bezier} -> {x},{y}')
 
         for i, t in enumerate(t_values):
             x_values[i] = (1 - t)**2 * x1 + 2 * (1 - t) * t * x + t**2 * x2
             y_values[i] = (1 - t)**2 * y1 + 2 * (1 - t) * t * y + t**2 * y2
 
         return y_values
+
+    def _tanh_curve(self, x1, y1, x2, y2, num_points):
+        x = np.linspace(x1, x2, num_points)
+        scale = (y2 - y1) / (np.tanh(x2 * self.args.tanh) - np.tanh(x1 * self.args.tanh))
+        translation = y1 - scale * np.tanh(x1 * self.args.tanh)
+        y = scale * np.tanh(x * self.args.tanh) + translation
+        return y
 
     def _line(self, x1, y1, x2, y2, num_points):
         """ just direct line """
@@ -144,6 +152,11 @@ class WtCurve:
         fname += f'_{add}' if add else ''
         return f'{fname}.{ext}'
 
+    def _title(self):
+        return (f'{self.title} m={self.args.mid_width_pct}% '
+                f'h={self.mid_yoffset}% '
+                f's={self.num_samples} w={self.num_waveforms}')
+
     def _mk_graph(self):
         x = np.linspace(0, 100, self.num_samples)
         plt.xticks(np.arange(min(x), max(x)+1, 25))
@@ -152,11 +165,7 @@ class WtCurve:
         ax = plt.gca()
         ax.xaxis.set_ticklabels([])
         plt.ylabel('Amplitude', fontsize=self.args.fontsize)
-        plt.title(
-            f'{self.title} e={self.args.exp} m={self.args.mid_width_pct}% '
-            f'h={self.mid_yoffset}% '
-            f's={self.num_samples} w={self.num_waveforms}',
-            fontsize=self.args.fontsize)
+        plt.title(self._title(), fontsize=self.args.fontsize)
         plt.grid(True)
         plt.legend(fontsize=self.args.fontsize)
         if self.args.png:
@@ -177,11 +186,7 @@ class WtCurve:
         ax.set_xticks([])
         ax.set_yticks([])
         ax.set_zticks([])
-        plt.title(
-            f'{self.title} e={self.args.exp} m={self.args.mid_width_pct}% '
-            f'h={self.mid_yoffset}%',
-            y=0.95,
-            fontsize=self.args.fontsize)
+        plt.title(self._title(), y=0.95, fontsize=self.args.fontsize)
         plt.subplots_adjust(bottom=0, top=1.03)
         if self.args.png:
             fn = self._fmt_fname('png', '3d')
@@ -198,14 +203,7 @@ class WtCurve:
             lines.append([line])
         ax.xaxis.set_ticklabels([])
         ax.set_ylabel('Amplitude', fontsize=self.args.fontsize)
-        if (self.args.bezier is not None) or self.args.direct:
-            param = ''
-        else:
-            param = f'e={self.args.exp} '
-        ax.set_title(
-            f'{self.title} {param}m={self.args.mid_width_pct}% '
-            f'h={self.mid_yoffset}%',
-            fontsize=self.args.fontsize)
+        ax.set_title(self._title(), fontsize=self.args.fontsize)
         ax.grid(True)
         anim = animation.ArtistAnimation(fig, lines, interval=500, blit=True)
         fn = self._fmt_fname('gif')
@@ -269,8 +267,6 @@ class WtCurve:
             if self.args.bitcrush:
                 max_val = 2**(self.args.bitcrush) - 1
                 y = np.round(y * max_val) / max_val
-            if self.args.tanh:
-                y = np.tanh(self.args.tanh * y)
             if self.args.dco:
                 # future experiments
                 dc_offset = np.mean(y)
