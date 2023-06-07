@@ -30,7 +30,7 @@ I have tested the 32-bit float WAV wavetables with the Linux versions of [Surge 
 
 Defaults: 32 bit float WAV, 256 waveforms, 2048 samples.
 
-Requirements: Python 3 with [NumPy](https://numpy.org/install/), [SciPy](https://scipy.org/), [Matplotlib](https://matplotlib.org), [soundfile](https://github.com/bastibe/python-soundfile). `wavchunks.py` scanner requires ancient [hexdump](https://pypi.org/project/hexdump/).
+Requirements: Python 3 with [NumPy](https://numpy.org/install/), [SciPy](https://scipy.org/), [Matplotlib](https://matplotlib.org), [soundfile](https://github.com/bastibe/python-soundfile).
 
 Surely there are bugs here.
 
@@ -100,9 +100,9 @@ Hive 2 wavetable oscillator
 
 ![Hive 2 WT OSC](images/hive_wt.jpg)
 
-Zebra 2 oscillator
+Vital wavetable editor
 
-![Zebra 2 OSC](images/zebra_osc.jpg)
+![Vital editor](images/vital_wt.jpg)
 
 ## (C)
 
