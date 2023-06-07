@@ -20,4 +20,4 @@ jobs:
         pip install pylint numpy scipy matplotlib soundfile hexdump
     - name: Analysing the code with pylint
       run: |
-        pylint --rcfile .pylintrc $(git ls-files '*.py' wttag wtcurve)
+        pylint --rcfile .pylintrc $(git ls-files '*.py' wavchunks wttag wtcurve)
