@@ -41,7 +41,7 @@ def mk_wav(d):
     dn = os.path.join(wav_path, tpath(d), fn)
     tagger = wttag.Tagger({
         'num_waveforms': d['num_waveforms'],
-        'num_samples': d['num_waveforms'],
+        'num_samples': d['num_samples'],
         'src_file': fn,
         'dst_file': dn,
         'mkdir': True, 'tag_clm': True})

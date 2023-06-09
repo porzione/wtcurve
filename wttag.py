@@ -77,6 +77,7 @@ def setup_parser():
 
 class Tagger:
     """ add chunk to file """
+
     def __init__(self, args: dict = None):
         """ if args is None then use argparse """
 
