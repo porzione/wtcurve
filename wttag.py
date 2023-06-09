@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# pylint: disable=too-many-locals,too-many-branches
+# pylint: disable=too-many-nested-blocks
 
 from argparse import ArgumentParser
 import types
@@ -120,19 +120,27 @@ class Tagger:
             print(f'mkdir: {dst_path}')
             os.makedirs(dst_path, mode=0o755)
 
-        self.lch = Chunk(self.a.num_waveforms, self.a.num_samples)
+        self.chunk = Chunk(self.a.num_waveforms, self.a.num_samples)
 
     def customize(self):
         pass
+
+    def _unpack_riff(self, data):
+        unp = struct.unpack('<4sI4s', data)
+        keys = ['riff', 'wavsize', 'fformat']
+        return dict(zip(keys, unp))
+
+    def _unpack_fmt(self, data):
+        unp = struct.unpack('<HHIIHH', data[:16])
+        keys = ['fmt', 'ch', 'sr', 'br', 'ba', 'bits']
+        return dict(zip(keys, unp))
 
     def tag(self):
 
         with open(self.a.src_file, 'rb') as src:
             # read/write riff
             data = src.read(12)
-            riff, size, fformat = struct.unpack('<4sI4s', data)
-            print(f'RIFF header: {riff}, size: {size}, format: {fformat}')
-            # dst = open(self.a.dst_file, 'wb')
+            print(self._unpack_riff(data))
             with open(self.a.dst_file, 'wb') as dst:
                 dst.write(data)
                 found_chunks = []
@@ -141,37 +149,24 @@ class Tagger:
                         head = src.read(8)
                         chid, size = struct.unpack('<4sI', head)
                         found_chunks.append(chid)
-                        # print(f'found_chunks: {found_chunks}')
                         print(f'chunk id: {chid}, size: {size}')
-                        data = bytearray(src.read(size))  # change fmt
+                        data = bytearray(src.read(size))
                         print(f'read size: {len(data)}')
                         if chid in [b'PEAK', b'fact'] and not self.a.all_tags:
                             continue
                         if chid == b'fmt ':
+                            print(self._unpack_fmt(data))
                             data[8:12] = struct.pack('<I', 0)  # zero rate
-                            fmt, ch, sr, br, ba, bits = struct.unpack('<HHIIHH', data[:16])
-                            print(f'fmt: {fmt}, ch: {ch}, sr: {sr}, br: {br}, '
-                                  f'ba: {ba}, bits: {bits}')
                         elif chid == b'data':
                             # write new chunks before data
-                            if self.a.tag_surge:
-                                if TAGS['surge'] in found_chunks and not self.a.ov_tags:
-                                    print('skip surge')
-                                else:
-                                    print('write surge')
-                                    dst.write(self.lch.mk_surge())
-                            if self.a.tag_uhe:
-                                if TAGS['uhe'] in found_chunks and not self.a.ov_tags:
-                                    print('skip uhe')
-                                else:
-                                    print('write uhe')
-                                    dst.write(self.lch.mk_uhe())
-                            if self.a.tag_clm:
-                                if TAGS['clm'] in found_chunks and not self.a.ov_tags:
-                                    print('skip clm')
-                                else:
-                                    print('write clm')
-                                    dst.write(self.lch.mk_clm())
+                            for tag, tval in TAGS.items():
+                                if getattr(self.a, f'tag_{tag}'):
+                                    if tval in found_chunks and not self.a.ov_tags:
+                                        print(f'skip {tag}')
+                                    else:
+                                        print(f'write {tag}')
+                                        dst.write(getattr(self.chunk, f'mk_{tag}')())
+
                         dst.write(head)
                         dst.write(data)
 
