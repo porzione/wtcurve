@@ -73,8 +73,8 @@ def setup_parser():
                               help="Hyperbolic float tangent, e.g. 4.0")
     waveform_group.add_argument("-B", dest="bezier", type=float,
                                help="Bezier control points float multiplier, best -9.0 to 4.0")
-    waveform_group.add_argument("-L", action='store_true', dest="direct",
-                               help="Use direct line instead of curve")
+    waveform_group.add_argument("-L", action='store_true', dest="dline",
+                               help="Direct line instead of curve")
 
     # Filter options
     filter_group = argp.add_argument_group("Filter options")

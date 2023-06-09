@@ -37,15 +37,15 @@ Surely there are bugs here.
 We have help:
 
 ```text
-$ wtcurve --help
+$ wtcurve.py --help
 
-usage: wtcurve [-h] [-D] [-w NUM_WAVEFORMS]
-               [-s {16,32,64,128,256,512,1024,2048,4096}] [--16]
-               [-m MID_WIDTH_PCT] [-o MID_YOFFSET] [-e {2,3,4,5,6,7,8,9}]
-               [--tanh TANH] [-B BEZIER] [-L] [--savgol SAVGOL]
-               [--gauss GAUSS] [--bitcrush BITCRUSH] [--dco] [--graph]
-               [--graph3d] [--png] [--wav] [--wt] [--h2p] [--gif] [--dpi DPI]
-               [--fontsize FONTSIZE] [-O] [--fullfn]
+usage: wtcurve.py [-h] [-D] [-w NUM_WAVEFORMS]
+                  [-s {16,32,64,128,256,512,1024,2048,4096}] [--16]
+                  [-m MID_WIDTH_PCT] [-o MID_YOFFSET] [-e {2,3,4,5,6,7,8,9}]
+                  [--tanh TANH] [-B BEZIER] [-L] [--savgol SAVGOL]
+                  [--gauss GAUSS] [--bitcrush BITCRUSH] [--dco] [--graph]
+                  [--graph3d] [--png] [--wav] [--wt] [--h2p] [--gif]
+                  [--dpi DPI] [--fontsize FONTSIZE] [-O] [--fullfn]
 
 options:
   -h, --help            show this help message and exit
@@ -62,14 +62,14 @@ Waveform options:
   --tanh TANH           Hyperbolic float tangent, e.g. 4.0
   -B BEZIER             Bezier control points float multiplier, best -9.0 to
                         4.0
-  -L                    Use direct line instead of curve
+  -L                    Direct line instead of curve
 
 Filter options:
   --savgol SAVGOL       Savitzky-Golay filter window_len(%),polyorder, e.g.
                         51,3
   --gauss GAUSS         Gaussian filter int sigma, e.g. 2
   --bitcrush BITCRUSH   Bitcrush int depth, e.g. 5
-  --dco                 Apply DC offset WIP!
+  --dco                 DC offset WIP!
 
 Output options:
   --graph               Plot graph
@@ -100,7 +100,7 @@ Hive 2 wavetable oscillator
 
 ![Hive 2 WT OSC](images/hive_wt.jpg)
 
-Vital wavetable editor
+Vital oscillators
 
 ![Vital editor](images/vital_wt.jpg)
 

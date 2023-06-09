@@ -3,88 +3,107 @@
 
 import subprocess
 import sys
+import types
 import numpy as np
 from scipy.signal import savgol_filter
 from scipy.ndimage import gaussian_filter1d
 import matplotlib.pyplot as plt
 from matplotlib import animation
-from argparser_config import setup_parser
+from wtcurve_args import setup_parser
 import wtfile
-# from pprint import pprint
 
 
 class WtCurve:
     """ wavetable curve: compute data, save files """
 
-    def __init__(self):
+    def __init__(self, args: dict = None):
+        """ if args is None then use argparse """
 
-        argp = setup_parser()
-        self.args = argp.parse_args()
-        # print(self.args) ; exit()
-
-        if not (self.args.wav or self.args.graph or self.args.graph3d or
-                self.args.debug or self.args.gif or self.args.h2p or self.args.wt):
-            print(f'What to do?\n\n{argp.format_help()}')
+        self._prepare_args(args)
+        if not (self.a.wav or self.a.graph or self.a.graph3d or
+                self.a.debug or self.a.gif or self.a.h2p or self.a.wt):
+            print(f'What to do?\n\n{self.argp.format_help()}')
             sys.exit()
 
-        self.dbg = self.args.debug
+        self.dbg = self.a.debug
         self.wt = []
+        self.saved_files = []
         self._prepare_values()
+        # for attr, value in vars(self).items():
+        #     if attr != 'mid_widths':
+        #         print(f"{attr}: {value}")
+
+    def _prepare_args(self, args):
+        self.argp = setup_parser()
+        if args is None:
+            self.a = self.argp.parse_args()
+            return
+
+        args_dict = {}
+        for action in self.argp._actions: # pylint: disable=protected-access
+            if hasattr(action, 'dest'):
+                dest = action.dest
+                if dest in args:
+                    args_dict[dest] = args[dest]
+                elif hasattr(action, 'default'):
+                    args_dict[dest] = action.default
+
+        self.a = types.SimpleNamespace(**args_dict)
 
     def _debug(self, msg):
-        """ optional debug message helper """
+        """ debug message helper """
         if self.dbg:
             print(msg)
 
     def _prepare_values(self):
-        if self.args.bezier:
+        if isinstance(self.a.bezier, (float, int)):
             self.curve_fn = self._bezier_curve
-            self.title = f'Bézier {self.args.bezier}'
-            self.mtype = f'F{self.args.bezier:.4g}bz'
-        elif self.args.tanh:
+            self.title = f'Bézier {self.a.bezier}'
+            self.mtype = f'F{self.a.bezier:.4g}bz'
+        elif isinstance(self.a.tanh, (float, int)):
             self.curve_fn = self._tanh_curve
-            self.title = f'Hyperbolic tangent {self.args.tanh}'
-            self.mtype = f'F{self.args.tanh:.4g}ht'
-        elif self.args.direct:
+            self.title = f'Hyperbolic tangent {self.a.tanh}'
+            self.mtype = f'F{self.a.tanh:.4g}ht'
+        elif self.a.dline:
             self.curve_fn = self._line
             self.title = 'Direct line'
             self.mtype = 'dl'
         else:
             self.curve_fn = self._exp_curve
-            self.title = f'Exponent {self.args.exp}'
-            self.mtype = f'{self.args.exp}e'
+            self.title = f'Exponent {self.a.exp}'
+            self.mtype = f'{self.a.exp}e'
         self.suffix = ''
-        if self.args.savgol:
-            self.title = f'{self.title} savgol={self.args.savgol}'
-            self.suffix = f'{self.suffix}_sg{self.args.savgol[0]}-{self.args.savgol[1]}'
-        if self.args.gauss:
-            self.title = f'{self.title} gauss={self.args.gauss}'
-            self.suffix = f'{self.suffix}_ga{self.args.gauss}'
-        if self.args.bitcrush:
-            self.title = f'{self.title} bitcrush={self.args.bitcrush}'
-            self.suffix = f'{self.suffix}_bc{self.args.bitcrush}'
-        if self.args.dco:
+        if isinstance(self.a.savgol, tuple):
+            self.title = f'{self.title} savgol={self.a.savgol}'
+            self.suffix = f'{self.suffix}_sg{self.a.savgol[0]}-{self.a.savgol[1]}'
+        if isinstance(self.a.gauss, (float, int)):
+            self.title = f'{self.title} gauss={self.a.gauss}'
+            self.suffix = f'{self.suffix}_ga{self.a.gauss}'
+        if isinstance(self.a.bitcrush, (float, int)):
+            self.title = f'{self.title} bitcrush={self.a.bitcrush}'
+            self.suffix = f'{self.suffix}_bc{self.a.bitcrush}'
+        if self.a.dco:
             self.title = f'{self.title} dco'
             self.suffix = f'{self.suffix}_dco'
 
-        if self.args.h2p:
+        if self.a.h2p:
             self.num_samples = 128
             self.num_waveforms = 16
         else:
-            self.num_samples = self.args.num_samples
-            self.num_waveforms = self.args.num_waveforms
+            self.num_samples = self.a.num_samples
+            self.num_waveforms = self.a.num_waveforms
 
-        self.mid_samples = int((self.args.mid_width_pct / 100) * self.num_samples)
+        self.mid_samples = int((self.a.mid_width_pct / 100) * self.num_samples)
         self.mid_samples -= self.mid_samples % 2
         self._debug(f'mid_samples: {self.mid_samples} '
-                    '({self.args.mid_width_pct}% of {self.num_samples})')
+                    '({self.a.mid_width_pct}% of {self.num_samples})')
 
         self.mid_widths = np.round(self.mid_samples * np.arange(self.num_waveforms) /
                               (self.num_waveforms - 1)).astype(int)
         self.mid_widths -= self.mid_widths % 2
         self._debug(f'mid_widths: {self.mid_widths}')
 
-        self.mid_yoffset = self.args.mid_yoffset * 0.01
+        self.mid_yoffset = self.a.mid_yoffset * 0.01
         self._debug(f'mid_yoffset: {self.mid_yoffset}')
 
     def wavetable(self):
@@ -94,8 +113,8 @@ class WtCurve:
         """ exponential curve with fixed start and end """
         self._debug(f'curve: {x1} {y1} {x2} {y2} {num_points}')
         x = np.linspace(x1, x2, num_points)
-        y = y1 + (y2 - y1) * (np.exp(self.args.exp * (x - x1)) - 1) / \
-            (np.exp(self.args.exp * (x2 - x1)) - 1)
+        y = y1 + (y2 - y1) * (np.exp(self.a.exp * (x - x1)) - 1) / \
+            (np.exp(self.a.exp * (x2 - x1)) - 1)
         if x1 < 0:
             y_rotated = y2 - (y - y1)
             return y_rotated[::-1]
@@ -111,8 +130,8 @@ class WtCurve:
         x_values = np.zeros(num_points)
         y_values = np.zeros(num_points)
         x = np.where(x1 < 0, x1, x2)
-        y = np.where(x1 < 0, y2, y1) * self.args.bezier
-        # print(f'args {self.args.bezier} -> {x},{y}')
+        y = np.where(x1 < 0, y2, y1) * self.a.bezier
+        # print(f'args {self.a.bezier} -> {x},{y}')
 
         for i, t in enumerate(t_values):
             x_values[i] = (1 - t)**2 * x1 + 2 * (1 - t) * t * x + t**2 * x2
@@ -122,9 +141,9 @@ class WtCurve:
 
     def _tanh_curve(self, x1, y1, x2, y2, num_points):
         x = np.linspace(x1, x2, num_points)
-        scale = (y2 - y1) / (np.tanh(x2 * self.args.tanh) - np.tanh(x1 * self.args.tanh))
-        translation = y1 - scale * np.tanh(x1 * self.args.tanh)
-        y = scale * np.tanh(x * self.args.tanh) + translation
+        scale = (y2 - y1) / (np.tanh(x2 * self.a.tanh) - np.tanh(x1 * self.a.tanh))
+        translation = y1 - scale * np.tanh(x1 * self.a.tanh)
+        y = scale * np.tanh(x * self.a.tanh) + translation
         return y
 
     def _line(self, x1, y1, x2, y2, num_points):
@@ -138,11 +157,11 @@ class WtCurve:
             y_values = y1 + ((y2 - y1) / (x2 - x1)) * (x_values - x1)
         return y_values
 
-    def _fmt_fname(self, ext, add=None):
+    def fmt_fname(self, ext, add=None):
         """ format file name for saving """
-        fname = f'{self.args.mid_width_pct}m_{self.args.mid_yoffset}h_{self.mtype}{self.suffix}'
+        fname = f'{self.a.mid_width_pct}m_{self.a.mid_yoffset}h_{self.mtype}{self.suffix}'
         if ext in ['wav', 'wt']:
-            if self.args.fullname:
+            if self.a.fullname:
                 fname = f'{fname}_{self.num_samples}s_{self.num_waveforms}w'
         elif ext == 'gif':
             fname = f'{fname}_anim'
@@ -153,7 +172,7 @@ class WtCurve:
         return f'{fname}.{ext}'
 
     def _title(self):
-        return (f'{self.title} m={self.args.mid_width_pct}% '
+        return (f'{self.title} m={self.a.mid_width_pct}% '
                 f'h={self.mid_yoffset}% '
                 f's={self.num_samples} w={self.num_waveforms}')
 
@@ -164,13 +183,13 @@ class WtCurve:
         plt.plot(x,self.wt[-1], 'c-', label='last waveform')
         ax = plt.gca()
         ax.xaxis.set_ticklabels([])
-        plt.ylabel('Amplitude', fontsize=self.args.fontsize)
-        plt.title(self._title(), fontsize=self.args.fontsize)
+        plt.ylabel('Amplitude', fontsize=self.a.fontsize)
+        plt.title(self._title(), fontsize=self.a.fontsize)
         plt.grid(True)
-        plt.legend(fontsize=self.args.fontsize)
-        if self.args.png:
-            fn = self._fmt_fname('png', '2d')
-            plt.savefig(fn, dpi=self.args.dpi)
+        plt.legend(fontsize=self.a.fontsize)
+        if self.a.png:
+            fn = self.fmt_fname('png', '2d')
+            plt.savefig(fn, dpi=self.a.dpi)
         else:
             plt.show()
 
@@ -186,11 +205,11 @@ class WtCurve:
         ax.set_xticks([])
         ax.set_yticks([])
         ax.set_zticks([])
-        plt.title(self._title(), y=0.95, fontsize=self.args.fontsize)
+        plt.title(self._title(), y=0.95, fontsize=self.a.fontsize)
         plt.subplots_adjust(bottom=0, top=1.03)
-        if self.args.png:
-            fn = self._fmt_fname('png', '3d')
-            plt.savefig(fn, dpi=int(self.args.dpi*1.2), pad_inches=0)
+        if self.a.png:
+            fn = self.fmt_fname('png', '3d')
+            plt.savefig(fn, dpi=int(self.a.dpi*1.2), pad_inches=0)
         else:
             plt.show()
 
@@ -202,14 +221,14 @@ class WtCurve:
             line, = ax.plot(self.wt[int(pct*pct1)], 'm-')
             lines.append([line])
         ax.xaxis.set_ticklabels([])
-        ax.set_ylabel('Amplitude', fontsize=self.args.fontsize)
-        ax.set_title(self._title(), fontsize=self.args.fontsize)
+        ax.set_ylabel('Amplitude', fontsize=self.a.fontsize)
+        ax.set_title(self._title(), fontsize=self.a.fontsize)
         ax.grid(True)
         anim = animation.ArtistAnimation(fig, lines, interval=500, blit=True)
-        fn = self._fmt_fname('gif')
+        fn = self.fmt_fname('gif')
         print(f'saving: {fn}')
-        anim.save(fn, writer='pillow', dpi=self.args.dpi)
-        if self.args.open:
+        anim.save(fn, writer='pillow', dpi=self.a.dpi)
+        if self.a.open:
             try:
                 cmd = f'mimeopen {fn}'
                 subprocess.run(cmd, shell=True, capture_output=True, text=True,
@@ -218,19 +237,19 @@ class WtCurve:
                 print(e.returncode, e.stdout, e.stderr)
 
     def _mk_wav(self):
-        fn = self._fmt_fname('wav')
-        print(f'saving: {fn} {self.args.bitwidth} bit')
-        wt = wtfile.Wt(self.wt, self.args.bitwidth)
+        fn = self.fmt_fname('wav')
+        print(f'saving: {fn} {self.a.bitwidth} bit')
+        wt = wtfile.Wt(self.wt, self.a.bitwidth)
         wt.save_wav(fn)
 
     def _mk_wt(self):
-        fn = self._fmt_fname('wt')
-        print(f'saving: {fn} {self.args.bitwidth} bit')
-        wt = wtfile.Wt(self.wt, self.args.bitwidth)
+        fn = self.fmt_fname('wt')
+        print(f'saving: {fn} {self.a.bitwidth} bit')
+        wt = wtfile.Wt(self.wt, self.a.bitwidth)
         wt.save_wt(fn)
 
     def _mk_h2p(self):
-        fn = self._fmt_fname('h2p')
+        fn = self.fmt_fname('h2p')
         print(f'saving: {fn}')
         wt = wtfile.Wt(self.wt)
         wt.save_h2p(fn)
@@ -238,7 +257,7 @@ class WtCurve:
     def generate(self):
         self.wt = np.zeros((self.num_waveforms, self.num_samples))
         self._debug(f'wt shape: {self.wt.shape}')
-        xoffsets = np.linspace(0, self.args.mid_width_pct / 100, self.num_waveforms)
+        xoffsets = np.linspace(0, self.a.mid_width_pct / 100, self.num_waveforms)
 
         for i in range(self.num_waveforms):
             cx = xoffsets[i]
@@ -257,17 +276,17 @@ class WtCurve:
             self._debug(f'ym: {ym} ({len(ym)})')
             y = np.concatenate((ya1, ym, ya2))
             self._debug(f'y: {y} {y.shape}')
-            if self.args.savgol:
-                if not self.args.savgol[0] in range(1,100):
+            if self.a.savgol:
+                if not self.a.savgol[0] in range(1,100):
                     raise ValueError('savgol window should be in range 1-100%')
-                wlen = int(self.num_samples / 100 * self.args.savgol[0])
-                y = savgol_filter(y, window_length=wlen, polyorder=self.args.savgol[1])
-            if self.args.gauss:
-                y = gaussian_filter1d(y, sigma=self.args.gauss)
-            if self.args.bitcrush:
-                max_val = 2**(self.args.bitcrush) - 1
+                wlen = int(self.num_samples / 100 * self.a.savgol[0])
+                y = savgol_filter(y, window_length=wlen, polyorder=self.a.savgol[1])
+            if self.a.gauss:
+                y = gaussian_filter1d(y, sigma=self.a.gauss)
+            if self.a.bitcrush:
+                max_val = 2**(self.a.bitcrush) - 1
                 y = np.round(y * max_val) / max_val
-            if self.args.dco:
+            if self.a.dco:
                 # future experiments
                 dc_offset = np.mean(y)
                 y -= dc_offset
@@ -281,9 +300,9 @@ class WtCurve:
 
         np.set_printoptions(linewidth=100, precision=2, suppress=True)
 
-        plt.rcParams['xtick.labelsize'] = self.args.fontsize
-        plt.rcParams['ytick.labelsize'] = self.args.fontsize
-        plt.rcParams['figure.dpi'] = self.args.dpi
+        plt.rcParams['xtick.labelsize'] = self.a.fontsize
+        plt.rcParams['ytick.labelsize'] = self.a.fontsize
+        plt.rcParams['figure.dpi'] = self.a.dpi
 
         actions = {
             'graph': self._mk_graph,
@@ -294,7 +313,7 @@ class WtCurve:
             'h2p': self._mk_h2p
         }
         for arg, action in actions.items():
-            if getattr(self.args, arg):
+            if getattr(self.a, arg):
                 action()
 
 def __main__():
