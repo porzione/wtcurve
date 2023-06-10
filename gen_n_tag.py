@@ -16,7 +16,6 @@ sa = 2048
 wa = 256
 # waveforms in simple tables
 wl = 64
-gif = False
 
 types = ['bezier', 'tanh', 'dline', 'exp']
 
@@ -68,23 +67,21 @@ def mk_h2p(d):
 
 savgol = 10
 print(f'savgol={savgol}')
-mk_wav({'num_waveforms': wa, 'num_samples': sa,
-       'savgol': (savgol, 3), 'gif': gif})
+mk_wav({'num_waveforms': wa, 'num_samples': sa, 'savgol': (savgol, 3)})
 mk_wt({'num_waveforms': wa, 'num_samples': sa, 'savgol': (savgol, 3)})
 mk_h2p({'savgol': (savgol, 3)})
 
 gauss = 40
 print(f'gauss={gauss}')
-mk_wav({'num_waveforms': wa, 'num_samples': sa, 'gauss': gauss, 'gif': gif})
+mk_wav({'num_waveforms': wa, 'num_samples': sa, 'gauss': gauss})
 mk_wt({'num_waveforms': wa, 'num_samples': sa, 'gauss': gauss})
 mk_h2p({'gauss': gauss})
 
 print('bitcrush')
 for bc in [3, 4, 5]:
+    mk_wav({'num_waveforms': wa, 'num_samples': sa, 'bitcrush': bc})
     mk_wav({'num_waveforms': wa, 'num_samples': sa, 'bitcrush': bc,
-            'gif': gif})
-    mk_wav({'num_waveforms': wa, 'num_samples': sa, 'bitcrush': bc,
-            'dline': True, 'gif': gif})
+            'dline': True})
     mk_wt({'num_waveforms': wa, 'num_samples': sa, 'bitcrush': bc})
     mk_wt({'num_waveforms': wa, 'num_samples': sa, 'bitcrush': bc,
            'dline': True})
@@ -93,27 +90,26 @@ for bc in [3, 4, 5]:
 
 print('variable bezier')
 for bz in range(1, -10, -1):
-    mk_wav({'num_waveforms': wa, 'num_samples': sa, 'bezier': bz, 'gif': gif})
+    mk_wav({'num_waveforms': wa, 'num_samples': sa, 'bezier': bz})
     mk_wt({'num_waveforms': wa, 'num_samples': sa, 'bezier': bz})
     mk_h2p({'bezier': bz})
 
 print('variable tanh')
-for o in [25, 35]:
+for o in [-25, 0, 25, 35]:
     for tanh in range(2, 7, 2):
         mk_wav({'num_waveforms': wa, 'num_samples': sa,
-               'tanh': tanh, 'mid_yoffset': o, 'gif': gif})
+               'tanh': tanh, 'mid_yoffset': o})
         mk_wt({'num_waveforms': wa, 'num_samples': sa,
               'tanh': tanh, 'mid_yoffset': o})
         mk_h2p({'tanh': tanh, 'mid_yoffset': o})
 
 print('variable offset')
-for o in [25, 35]:
-    mk_wav({'num_waveforms': wa, 'num_samples': sa, 'mid_yoffset': o,
-            'gif': gif})
+for o in [-25, 0, 15, 25, 35]:
+    mk_wav({'num_waveforms': wa, 'num_samples': sa, 'mid_yoffset': o})
     mk_wav({'num_waveforms': wl, 'num_samples': sa, 'mid_yoffset': o,
-            'dline': True, 'gif': gif})
+            'dline': True})
     mk_wav({'num_waveforms': wl, 'num_samples': sa, 'mid_yoffset': o,
-            'dline': True, 'gauss': 35, 'gif': gif})
+            'dline': True, 'gauss': 35})
     mk_wt({'num_waveforms': wa, 'num_samples': sa, 'mid_yoffset': o})
     mk_wt({'num_waveforms': wl, 'num_samples': sa,
            'mid_yoffset': o, 'dline': True})
@@ -126,6 +122,6 @@ for o in [25, 35]:
 print('variable exp')
 for e in range(1, 8):
     if e != 5:
-        mk_wav({'num_waveforms': wa, 'num_samples': sa, 'exp': e, 'gif': gif})
+        mk_wav({'num_waveforms': wa, 'num_samples': sa, 'exp': e})
         mk_wt({'num_waveforms': wa, 'num_samples': sa, 'exp': e})
         mk_h2p({'exp': e})
