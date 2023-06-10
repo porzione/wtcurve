@@ -136,9 +136,8 @@ class Tagger:
         return dict(zip(keys, unp))
 
     def tag(self):
-
+        print(f'tag: {self.a.src_file} -> {self.a.dst_file}')
         with open(self.a.src_file, 'rb') as src:
-            # read/write riff
             data = src.read(12)
             print(self._unpack_riff(data))
             with open(self.a.dst_file, 'wb') as dst:
@@ -151,7 +150,7 @@ class Tagger:
                         found_chunks.append(chid)
                         print(f'chunk id: {chid}, size: {size}')
                         data = bytearray(src.read(size))
-                        print(f'read size: {len(data)}')
+                        # print(f'read size: {len(data)}')
                         if chid in [b'PEAK', b'fact'] and not self.a.all_tags:
                             continue
                         if chid == b'fmt ':
@@ -175,7 +174,6 @@ class Tagger:
 
                 # update size in header
                 dst_size = os.fstat(dst.fileno()).st_size
-                # print(dst_size)
                 dst.seek(4)
                 dst.write((dst_size - 8).to_bytes(4, 'little'))
                 dst.close()

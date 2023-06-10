@@ -21,6 +21,9 @@ float Wave[%d];
 """
 H2P_FMULT = 0.999969
 
+def print_err(msg):
+    print(msg, file=sys.stderr)
+
 
 class Wt:
     """
@@ -35,7 +38,7 @@ class Wt:
         self.wf = waveforms.flatten()
         self.num_waveforms, self.num_samples = waveforms.shape
         if bitwidth not in [16, 32]:
-            print(f'wrong bitwidth: {bitwidth}')
+            print_err(f'wrong bitwidth: {bitwidth}')
             sys.exit(1)
 
         self.bitwidth = bitwidth
@@ -49,8 +52,8 @@ class Wt:
         """
 
         if os.path.exists(fn):
-            print(f'File "{fn}" exists', file=sys.stderr)
-            sys.exit(1)
+            print_err(f'File "{fn}" exists')
+            return
 
         normalized = self.wf / np.max(np.abs(self.wf))
 
@@ -70,8 +73,8 @@ class Wt:
         """
 
         if os.path.exists(fn):
-            print(f'File "{fn}" exists', file=sys.stderr)
-            sys.exit(1)
+            print_err(f'File "{fn}" exists')
+            return
 
         with open(fn, "wb") as file:
             header = bytearray(12)
@@ -98,8 +101,8 @@ class Wt:
         https://github.com/harveyormston/osc_gen/blob/main/osc_gen/zosc.py
         """
         if os.path.exists(fn):
-            print(f'File "{fn}" exists', file=sys.stderr)
-            # sys.exit()
+            print_err(f'File "{fn}" exists')
+            return
 
         with open(fn, "w", encoding="utf-8") as file:
             print(H2P_HEADER % self.num_samples, file=file)
