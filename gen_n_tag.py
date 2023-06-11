@@ -13,11 +13,11 @@ wt_path = os.path.expanduser('~/Music/Bitwig/Library/Wavetables/WT1/My')
 h2p_path = os.path.expanduser('~/.u-he/Zebra2/Modules/Oscillator/My')
 # samples
 sa = 2048
-# samples in simple wt wavetables
+# samples in simple wt waveforms
 sa_wt = 1024
 # waveforms
 wa = 256
-# waveforms in simple wavetables
+# waveforms in simple waveforms
 wl = 64
 
 types = ['bezier', 'tanh', 'dline', 'exp']
@@ -99,11 +99,11 @@ for o in range(-25,26,5):
     mk_h2p({'mid_yoffset': o, 'mid_width_pct': mid, 'dline': True})
     mk_h2p({'mid_yoffset': o, 'mid_width_pct': mid, 'dline': True, 'gauss': ga})
 
-savgol = (10, 3)
+savgol = 10
 print(f'savgol={savgol}')
-mk_wav({'num_waveforms': wa, 'num_samples': sa, 'savgol': savgol})
-mk_wt({'num_waveforms': wa, 'num_samples': sa, 'savgol': savgol})
-mk_h2p({'savgol': savgol})
+mk_wav({'num_waveforms': wa, 'num_samples': sa, 'savgol': (savgol, 3)})
+mk_wt({'num_waveforms': wa, 'num_samples': sa, 'savgol': (savgol, 3)})
+mk_h2p({'savgol': (savgol, 3)})
 
 gauss = 40
 print(f'gauss={gauss}')
@@ -139,13 +139,16 @@ for o in [-25, 0, 25, 35]:
 
 print('variable offset')
 for o in range(-25,26,5):
-    mk_wav({'num_waveforms': wa, 'num_samples': sa, 'mid_yoffset': o})
-    mk_wt({'num_waveforms': wa, 'num_samples': sa, 'mid_yoffset': o})
-    mk_h2p({'mid_yoffset': o})
+    if o not in [0, wtcurve_args.defaults['mid_yoffset']]:
+        mk_wav({'num_waveforms': wa, 'num_samples': sa, 'mid_yoffset': o})
+        mk_wt({'num_waveforms': wa, 'num_samples': sa, 'mid_yoffset': o})
+        mk_h2p({'mid_yoffset': o})
 
 print('variable exp')
-for e in range(1, 8):
-    if e != wtcurve_args.defaults['exponent']:
-        mk_wav({'num_waveforms': wa, 'num_samples': sa, 'exp': e})
-        mk_wt({'num_waveforms': wa, 'num_samples': sa, 'exp': e})
-        mk_h2p({'exp': e})
+for e in range(3, 9):
+    for o in [0, wtcurve_args.defaults['mid_yoffset']]:
+        mk_wav({'num_waveforms': wa, 'num_samples': sa, 'exp': e,
+                'mid_yoffset': o})
+        mk_wt({'num_waveforms': wa, 'num_samples': sa, 'exp': e,
+               'mid_yoffset': o})
+        mk_h2p({'exp': e, 'mid_yoffset': o})
