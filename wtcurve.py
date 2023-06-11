@@ -174,7 +174,7 @@ class WtCurve:
 
     def _title(self):
         return (f'{self.title} m={self.a.mid_width_pct}% '
-                f'h={self.mid_yoffset}% '
+                f'o={self.a.mid_yoffset}% '
                 f's={self.num_samples} w={self.num_waveforms}')
 
     def _mk_graph(self):

@@ -99,11 +99,11 @@ for o in range(-25,26,5):
     mk_h2p({'mid_yoffset': o, 'mid_width_pct': mid, 'dline': True})
     mk_h2p({'mid_yoffset': o, 'mid_width_pct': mid, 'dline': True, 'gauss': ga})
 
-savgol = 10
+savgol = (10, 3)
 print(f'savgol={savgol}')
-mk_wav({'num_waveforms': wa, 'num_samples': sa, 'savgol': (savgol, 3)})
-mk_wt({'num_waveforms': wa, 'num_samples': sa, 'savgol': (savgol, 3)})
-mk_h2p({'savgol': (savgol, 3)})
+mk_wav({'num_waveforms': wa, 'num_samples': sa, 'savgol': savgol})
+mk_wt({'num_waveforms': wa, 'num_samples': sa, 'savgol': savgol})
+mk_h2p({'savgol': savgol})
 
 gauss = 40
 print(f'gauss={gauss}')
