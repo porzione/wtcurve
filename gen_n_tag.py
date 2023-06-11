@@ -13,9 +13,11 @@ wt_path = os.path.expanduser('~/Music/Bitwig/Library/Wavetables/WT1/My')
 h2p_path = os.path.expanduser('~/.u-he/Zebra2/Modules/Oscillator/My')
 # samples
 sa = 2048
+# samples in simple wt wavetables
+sa_wt = 1024
 # waveforms
 wa = 256
-# waveforms in simple waveforms
+# waveforms in simple wavetables
 wl = 64
 
 types = ['bezier', 'tanh', 'dline', 'exp']
@@ -90,18 +92,18 @@ for o in range(-25,26,5):
             'mid_width_pct': mid, 'dline': True})
     mk_wav({'num_waveforms': wl, 'num_samples': sa, 'mid_yoffset': o,
             'mid_width_pct': mid, 'dline': True, 'gauss': ga})
-    mk_wt({'num_waveforms': wl, 'num_samples': sa, 'mid_yoffset': o,
+    mk_wt({'num_waveforms': wl, 'num_samples': sa_wt, 'mid_yoffset': o,
            'mid_width_pct': mid, 'dline': True})
-    mk_wt({'num_waveforms': wl, 'num_samples': sa,
+    mk_wt({'num_waveforms': wl, 'num_samples': sa_wt,
            'mid_width_pct': mid, 'mid_yoffset': o, 'dline': True, 'gauss': ga})
     mk_h2p({'mid_yoffset': o, 'mid_width_pct': mid, 'dline': True})
     mk_h2p({'mid_yoffset': o, 'mid_width_pct': mid, 'dline': True, 'gauss': ga})
 
-savgol = 10
+savgol = (10, 3)
 print(f'savgol={savgol}')
-mk_wav({'num_waveforms': wa, 'num_samples': sa, 'savgol': (savgol, 3)})
-mk_wt({'num_waveforms': wa, 'num_samples': sa, 'savgol': (savgol, 3)})
-mk_h2p({'savgol': (savgol, 3)})
+mk_wav({'num_waveforms': wa, 'num_samples': sa, 'savgol': savgol})
+mk_wt({'num_waveforms': wa, 'num_samples': sa, 'savgol': savgol})
+mk_h2p({'savgol': savgol})
 
 gauss = 40
 print(f'gauss={gauss}')
