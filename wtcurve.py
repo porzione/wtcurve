@@ -158,8 +158,9 @@ class WtCurve:
         return y_values
 
     def fmt_fname(self, ext, add=None):
-        """ format file name for saving """
-        fname = f'{self.a.mid_width_pct}m_{self.a.mid_yoffset}h_{self.mtype}{self.suffix}'
+        """ format file name """
+        fname = (f'{self.a.mid_width_pct}m_{self.a.mid_yoffset}h_'
+                 f'{self.mtype}{self.suffix}')
         if ext in ['wav', 'wt']:
             if self.a.fullname:
                 fname = f'{fname}_{self.num_samples}s_{self.num_waveforms}w'
@@ -189,9 +190,11 @@ class WtCurve:
         plt.legend(fontsize=self.a.fontsize)
         if self.a.png:
             fn = self.fmt_fname('png', '2d')
+            print(f'saving: {fn}')
             plt.savefig(fn, dpi=self.a.dpi)
         else:
             plt.show()
+        plt.close()
 
     def _mk_graph3d(self):
         x = np.arange(self.wt.shape[1])
@@ -209,9 +212,11 @@ class WtCurve:
         plt.subplots_adjust(bottom=0, top=1.03)
         if self.a.png:
             fn = self.fmt_fname('png', '3d')
+            print(f'saving: {fn}')
             plt.savefig(fn, dpi=int(self.a.dpi*1.2), pad_inches=0)
         else:
             plt.show()
+        plt.close()
 
     def _mk_gif(self):
         pct1 = self.num_waveforms / 100
@@ -228,6 +233,7 @@ class WtCurve:
         fn = self.fmt_fname('gif')
         print(f'saving: {fn}')
         anim.save(fn, writer='pillow', dpi=self.a.dpi)
+        plt.close()
         if self.a.open:
             try:
                 cmd = f'mimeopen {fn}'

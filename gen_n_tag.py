@@ -5,6 +5,7 @@ import os
 import shutil
 import wtcurve
 import wttag
+import wtcurve_args
 
 # destination paths for tagged files
 wav_path = '/home/ftp/audio/Wavetables/WT1/My'
@@ -14,9 +15,8 @@ h2p_path = os.path.expanduser('~/.u-he/Zebra2/Modules/Oscillator/My')
 sa = 2048
 # waveforms
 wa = 256
-# waveforms in simple tables
+# waveforms in simple waveforms
 wl = 64
-gif = False
 
 types = ['bezier', 'tanh', 'dline', 'exp']
 
@@ -65,26 +65,55 @@ def mk_h2p(d):
     fn = wtc.fmt_fname('h2p')
     shutil.copy(fn, h2p_path)
 
+def mk_gif(d):
+    d['gif'] = True
+    wtc = wtcurve.WtCurve(d)
+    wtc.generate()
+
+def mk_png(d):
+    d['png'] = True
+    d['graph'] = True
+    wtc = wtcurve.WtCurve(d)
+    wtc.generate()
+
+print('variable direct')
+mid=30
+ga=35
+for o in range(-25,26,5):
+    #mk_gif({'num_waveforms': wl, 'num_samples': sa, 'mid_yoffset': o,
+    #        'mid_width_pct': mid, 'dline': True})
+    #mk_png({'num_waveforms': wl, 'num_samples': sa, 'mid_yoffset': o,
+    #        'mid_width_pct': mid, 'dline': True})
+    #mk_png({'num_waveforms': wl, 'num_samples': sa, 'mid_yoffset': o,
+    #        'mid_width_pct': mid, 'dline': True, 'gauss': ga})
+    mk_wav({'num_waveforms': wl, 'num_samples': sa, 'mid_yoffset': o,
+            'mid_width_pct': mid, 'dline': True})
+    mk_wav({'num_waveforms': wl, 'num_samples': sa, 'mid_yoffset': o,
+            'mid_width_pct': mid, 'dline': True, 'gauss': ga})
+    mk_wt({'num_waveforms': wl, 'num_samples': sa, 'mid_yoffset': o,
+           'mid_width_pct': mid, 'dline': True})
+    mk_wt({'num_waveforms': wl, 'num_samples': sa,
+           'mid_width_pct': mid, 'mid_yoffset': o, 'dline': True, 'gauss': ga})
+    mk_h2p({'mid_yoffset': o, 'mid_width_pct': mid, 'dline': True})
+    mk_h2p({'mid_yoffset': o, 'mid_width_pct': mid, 'dline': True, 'gauss': ga})
 
 savgol = 10
 print(f'savgol={savgol}')
-mk_wav({'num_waveforms': wa, 'num_samples': sa,
-       'savgol': (savgol, 3), 'gif': gif})
+mk_wav({'num_waveforms': wa, 'num_samples': sa, 'savgol': (savgol, 3)})
 mk_wt({'num_waveforms': wa, 'num_samples': sa, 'savgol': (savgol, 3)})
 mk_h2p({'savgol': (savgol, 3)})
 
 gauss = 40
 print(f'gauss={gauss}')
-mk_wav({'num_waveforms': wa, 'num_samples': sa, 'gauss': gauss, 'gif': gif})
+mk_wav({'num_waveforms': wa, 'num_samples': sa, 'gauss': gauss})
 mk_wt({'num_waveforms': wa, 'num_samples': sa, 'gauss': gauss})
 mk_h2p({'gauss': gauss})
 
 print('bitcrush')
 for bc in [3, 4, 5]:
+    mk_wav({'num_waveforms': wa, 'num_samples': sa, 'bitcrush': bc})
     mk_wav({'num_waveforms': wa, 'num_samples': sa, 'bitcrush': bc,
-            'gif': gif})
-    mk_wav({'num_waveforms': wa, 'num_samples': sa, 'bitcrush': bc,
-            'dline': True, 'gif': gif})
+            'dline': True})
     mk_wt({'num_waveforms': wa, 'num_samples': sa, 'bitcrush': bc})
     mk_wt({'num_waveforms': wa, 'num_samples': sa, 'bitcrush': bc,
            'dline': True})
@@ -93,39 +122,28 @@ for bc in [3, 4, 5]:
 
 print('variable bezier')
 for bz in range(1, -10, -1):
-    mk_wav({'num_waveforms': wa, 'num_samples': sa, 'bezier': bz, 'gif': gif})
+    mk_wav({'num_waveforms': wa, 'num_samples': sa, 'bezier': bz})
     mk_wt({'num_waveforms': wa, 'num_samples': sa, 'bezier': bz})
     mk_h2p({'bezier': bz})
 
 print('variable tanh')
-for o in [25, 35]:
+for o in [-25, 0, 25, 35]:
     for tanh in range(2, 7, 2):
         mk_wav({'num_waveforms': wa, 'num_samples': sa,
-               'tanh': tanh, 'mid_yoffset': o, 'gif': gif})
+               'tanh': tanh, 'mid_yoffset': o})
         mk_wt({'num_waveforms': wa, 'num_samples': sa,
               'tanh': tanh, 'mid_yoffset': o})
         mk_h2p({'tanh': tanh, 'mid_yoffset': o})
 
 print('variable offset')
-for o in [25, 35]:
-    mk_wav({'num_waveforms': wa, 'num_samples': sa, 'mid_yoffset': o,
-            'gif': gif})
-    mk_wav({'num_waveforms': wl, 'num_samples': sa, 'mid_yoffset': o,
-            'dline': True, 'gif': gif})
-    mk_wav({'num_waveforms': wl, 'num_samples': sa, 'mid_yoffset': o,
-            'dline': True, 'gauss': 35, 'gif': gif})
+for o in range(-25,26,5):
+    mk_wav({'num_waveforms': wa, 'num_samples': sa, 'mid_yoffset': o})
     mk_wt({'num_waveforms': wa, 'num_samples': sa, 'mid_yoffset': o})
-    mk_wt({'num_waveforms': wl, 'num_samples': sa,
-           'mid_yoffset': o, 'dline': True})
-    mk_wt({'num_waveforms': wl, 'num_samples': sa,
-           'mid_yoffset': o, 'dline': True, 'gauss': 35})
     mk_h2p({'mid_yoffset': o})
-    mk_h2p({'mid_yoffset': o, 'dline': True})
-    mk_h2p({'mid_yoffset': o, 'dline': True, 'gauss': 35})
 
 print('variable exp')
 for e in range(1, 8):
-    if e != 5:
-        mk_wav({'num_waveforms': wa, 'num_samples': sa, 'exp': e, 'gif': gif})
+    if e != wtcurve_args.defaults['exponent']:
+        mk_wav({'num_waveforms': wa, 'num_samples': sa, 'exp': e})
         mk_wt({'num_waveforms': wa, 'num_samples': sa, 'exp': e})
         mk_h2p({'exp': e})

@@ -26,23 +26,22 @@ def tuple_2int(value):
 #     except:
 #         raise ArgumentTypeError("Invalid tuple argument")
 
+defaults = {
+    "num_waveforms": 256,
+    "num_samples": 2048,
+    "bitwidth": 32,
+    "dpi": 200,
+    "fontsize": 8,
+    "exponent": 5,
+    "mid_width_pct": 60,
+    "mid_yoffset": 25
+}
+
 def setup_parser():
     """
     configure all the flags and defaults
     """
     argp = ArgumentParser()
-
-    # Default values
-    defaults = {
-        "num_waveforms": 256,
-        "num_samples": 2048,
-        "bitwidth": 32,
-        "dpi": 200,
-        "fontsize": 8,
-        "exponent": 5,
-        "mid_width_pct": 60,
-        "mid_yoffset": 25
-    }
 
     # General options
     argp.add_argument("-D", action="store_true", dest="debug", help="Print a lot of debug messages")
