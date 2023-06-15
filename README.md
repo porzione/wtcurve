@@ -47,9 +47,10 @@ usage: wtcurve.py [-h] [-D] [-w NUM_WAVEFORMS]
                   [-s {16,32,64,128,256,512,1024,2048,4096}] [--16]
                   [-m MID_WIDTH_PCT] [-o MID_YOFFSET] [-e {2,3,4,5,6,7,8,9}]
                   [--tanh TANH] [-B BEZIER] [-L] [--rev] [--shift SHIFT]
-                  [--savgol SAVGOL] [--gauss GAUSS] [--bitcrush BITCRUSH]
-                  [--graph] [--graph3d] [--png] [--wav] [--wt] [--h2p] [--gif]
-                  [--dpi DPI] [--fontsize FONTSIZE] [-O] [--fullfn]
+                  [--norm NORM] [--savgol SAVGOL] [--gauss GAUSS]
+                  [--bitcrush BITCRUSH] [--graph] [--graph3d] [--png] [--wav]
+                  [--wt] [--h2p] [--gif] [--dpi DPI] [--fontsize FONTSIZE]
+                  [-O] [--fullfn]
 
 options:
   -h, --help            show this help message and exit
@@ -64,11 +65,11 @@ Waveform options:
   -o MID_YOFFSET        Offset from y-axis in % (default: 25)
   -e {2,3,4,5,6,7,8,9}  Exponent of curve (default: 5)
   --tanh TANH           Hyperbolic float tangent, e.g. 4.0
-  -B BEZIER             Bezier control points float multiplier, best -9.0 to
-                        4.0
+  -B BEZIER             Bezier control point float multiplier, best -9.0..4.0
   -L                    Direct line instead of curve
   --rev                 Reverse waveform
   --shift SHIFT         Shift (roll) waveform, int samples
+  --norm NORM           Normalize to, float, e.g. 0.8
 
 Filter options:
   --savgol SAVGOL       Savitzky-Golay filter window_len(%),polyorder, e.g.
