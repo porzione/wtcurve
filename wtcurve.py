@@ -88,6 +88,9 @@ class WtCurve:
         if self.a.shift:
             self.title = f'{self.title} shift={self.a.shift}'
             self.suffix = f'{self.suffix}_sh{self.a.shift}'
+        if self.a.norm:
+            self.title = f'{self.title} norm={self.a.norm:.2g}'
+            self.suffix = f'{self.suffix}_no{self.a.norm:.2g}'
 
         if self.a.h2p:
             self.num_samples = 128
@@ -250,12 +253,14 @@ class WtCurve:
         fn = self.fmt_fname('wav')
         print(f'saving: {fn} {self.a.bitwidth} bit')
         wt = wtfile.Wt(self.wt, self.a.bitwidth)
+        wt.set_normalize(not self.a.norm)
         wt.save_wav(fn)
 
     def _mk_wt(self):
         fn = self.fmt_fname('wt')
         print(f'saving: {fn} {self.a.bitwidth} bit')
         wt = wtfile.Wt(self.wt, self.a.bitwidth)
+        wt.set_normalize(not self.a.norm)
         wt.save_wt(fn)
 
     def _mk_h2p(self):
@@ -300,6 +305,9 @@ class WtCurve:
                 y = y[::-1]
             if self.a.shift:
                 y = np.roll(y, shift=self.a.shift)
+            if self.a.norm:
+                abs_max = np.max(np.abs(y))
+                y = y / abs_max * self.a.norm
 
             self.wt[i] = y
 

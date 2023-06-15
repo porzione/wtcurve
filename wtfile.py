@@ -42,8 +42,13 @@ class Wt:
             sys.exit(1)
 
         self.bitwidth = bitwidth
+        self.normalize = True
         # print(f'Wav waveforms: {self.num_waveforms}, '
         #       f'samples: {self.num_samples}')
+
+
+    def set_normalize(self, is_required):
+        self.normalize = bool(is_required)
 
     def save_wav(self, fn):
         """
@@ -55,7 +60,7 @@ class Wt:
             print_err(f'File "{fn}" exists')
             return
 
-        normalized = self.wf / np.max(np.abs(self.wf))
+        normalized = self.wf / np.max(np.abs(self.wf)) if self.normalize else self.wf
 
         if self.bitwidth == 32:
             data = np.float32(normalized)
@@ -86,7 +91,7 @@ class Wt:
             header[10:12] = bytes([bits, 0])
             file.write(header)
 
-            normalized = self.wf / np.max(np.abs(self.wf))
+            normalized = self.wf / np.max(np.abs(self.wf)) if self.normalize else self.wf
 
             if self.bitwidth == 32:
                 normalized.astype(np.float32).tofile(file)

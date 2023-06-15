@@ -3,6 +3,7 @@
 
 import os
 import shutil
+# import numpy as np
 import wtcurve
 import wttag
 # import wtcurve_args
@@ -69,7 +70,6 @@ def mk_h2p(d):
     wtc.generate()
     fn = wtc.fmt_fname('h2p')
     dn = os.path.join(h2p_path, tpath(d), fn)
-    print(fn, dn)
     shutil.move(fn, dn)
 
 def mk_gif(d):
@@ -172,17 +172,23 @@ def gen_exp():
 
 def gen_shift():
     print('shift')
-    for sh in [int(x) for x in [sa*0.25, sa*0.5, sa*0.75]]:
-        for o in [-25, 0, 25]:
-            #mk_png({'num_waveforms': wa, 'num_samples': sa,
-            #        'mid_yoffset': o, 'shift': sh})
-            # continue
-            mk_wav({'num_waveforms': wa, 'num_samples': sa,
-                    'mid_yoffset': o, 'shift': sh})
-            mk_wt({'num_waveforms': wa, 'num_samples': sa,
-                    'mid_yoffset': o, 'shift': sh})
-            mk_h2p({'num_waveforms': wa, 'num_samples': sa,
-                    'mid_yoffset': o, 'shift': sh})
+    half = sa // 2
+    mk_wav({'num_waveforms': wa, 'num_samples': sa, 'mid_yoffset': 0,
+            'shift': half, 'mid_width_pct': 95})
+    mk_wav({'num_waveforms': wa, 'num_samples': sa, 'mid_yoffset': 0,
+            'shift': half, 'mid_width_pct': 95, 'bezier': 0 })
+    mk_wav({'num_waveforms': wa, 'num_samples': sa, 'mid_yoffset': 0,
+            'shift': half, 'mid_width_pct': 95, 'dline': True })
+    mk_wt({'num_waveforms': wa, 'num_samples': sa, 'mid_yoffset': 0,
+            'shift': half, 'mid_width_pct': 95})
+    mk_wt({'num_waveforms': wa, 'num_samples': sa, 'mid_yoffset': 0,
+            'shift': half, 'mid_width_pct': 95, 'bezier': 0 })
+    mk_wt({'num_waveforms': wa, 'num_samples': sa, 'mid_yoffset': 0,
+            'shift': half, 'mid_width_pct': 95, 'dline': True })
+    # h2p has fixed 128 samples
+    mk_h2p({'mid_yoffset': 0, 'shift': 64, 'mid_width_pct': 95})
+    mk_h2p({'mid_yoffset': 0, 'shift': 64, 'mid_width_pct': 95, 'bezier': 0})
+    mk_h2p({'mid_yoffset': 0, 'shift': 64, 'mid_width_pct': 95, 'dline': True})
 
 gen_shift()
 gen_direct()

@@ -26,6 +26,13 @@ def tuple_2int(value):
 #     except:
 #         raise ArgumentTypeError("Invalid tuple argument")
 
+def restricted_float1(n):
+    n = float(n)
+    if n <= 0 or n >= 1.0:
+        raise ArgumentTypeError(f"{n} not in range [0, 1.0]")
+    return n
+
+
 defaults = {
     "num_waveforms": 256,
     "num_samples": 2048,
@@ -71,13 +78,15 @@ def setup_parser():
     waveform_group.add_argument("--tanh", dest="tanh", type=float,
                               help="Hyperbolic float tangent, e.g. 4.0")
     waveform_group.add_argument("-B", dest="bezier", type=float,
-                               help="Bezier control points float multiplier, best -9.0 to 4.0")
+                               help="Bezier control point float multiplier, best -9.0..4.0")
     waveform_group.add_argument("-L", action='store_true', dest="dline",
                                help="Direct line instead of curve")
     waveform_group.add_argument("--rev", action='store_true', dest="reverse",
                                 help="Reverse waveform")
     waveform_group.add_argument("--shift", dest="shift", type=int,
                                 help="Shift (roll) waveform, int samples")
+    waveform_group.add_argument("--norm", dest="norm", type=restricted_float1,
+                                help="Normalize to, float, e.g. 0.8")
 
     # Filter options
     filter_group = argp.add_argument_group("Filter options")
