@@ -159,7 +159,8 @@ class WtCurve:
 
     def fmt_fname(self, ext, add=None):
         """ format file name """
-        fname = (f'{self.a.mid_width_pct}m_{self.a.mid_yoffset}h_'
+        ywidth = 2 if self.a.mid_yoffset >= 0 else 3
+        fname = (f'{self.a.mid_width_pct}m_{self.a.mid_yoffset:0{ywidth}d}h_'
                  f'{self.mtype}{self.suffix}')
         if ext in ['wav', 'wt']:
             if self.a.fullname:
