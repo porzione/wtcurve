@@ -82,9 +82,12 @@ class WtCurve:
         if isinstance(self.a.bitcrush, (float, int)):
             self.title = f'{self.title} bitcrush={self.a.bitcrush}'
             self.suffix = f'{self.suffix}_bc{self.a.bitcrush}'
-        if self.a.dco:
-            self.title = f'{self.title} dco'
-            self.suffix = f'{self.suffix}_dco'
+        if self.a.reverse:
+            self.title = f'{self.title} rev'
+            self.suffix = f'{self.suffix}_rev'
+        if self.a.shift:
+            self.title = f'{self.title} shift={self.a.shift}'
+            self.suffix = f'{self.suffix}_sh{self.a.shift}'
 
         if self.a.h2p:
             self.num_samples = 128
@@ -293,10 +296,10 @@ class WtCurve:
             if self.a.bitcrush:
                 max_val = 2**(self.a.bitcrush) - 1
                 y = np.round(y * max_val) / max_val
-            if self.a.dco:
-                # future experiments
-                dc_offset = np.mean(y)
-                y -= dc_offset
+            if self.a.reverse:
+                y = y[::-1]
+            if self.a.shift:
+                y = np.roll(y, shift=self.a.shift)
 
             self.wt[i] = y
 

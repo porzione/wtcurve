@@ -74,6 +74,10 @@ def setup_parser():
                                help="Bezier control points float multiplier, best -9.0 to 4.0")
     waveform_group.add_argument("-L", action='store_true', dest="dline",
                                help="Direct line instead of curve")
+    waveform_group.add_argument("--rev", action='store_true', dest="reverse",
+                                help="Reverse waveform")
+    waveform_group.add_argument("--shift", dest="shift", type=int,
+                                help="Shift (roll) waveform, int samples")
 
     # Filter options
     filter_group = argp.add_argument_group("Filter options")
@@ -83,8 +87,6 @@ def setup_parser():
                               help="Gaussian filter int sigma, e.g. 2")
     filter_group.add_argument("--bitcrush", dest="bitcrush", type=int,
                               help="Bitcrush int depth, e.g. 5")
-    filter_group.add_argument("--dco", action='store_true', dest="dco",
-                              help="DC offset WIP!")
 
     # Output options
     output_group = argp.add_argument_group("Output options")

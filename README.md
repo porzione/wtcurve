@@ -44,9 +44,9 @@ $ wtcurve.py --help
 usage: wtcurve.py [-h] [-D] [-w NUM_WAVEFORMS]
                   [-s {16,32,64,128,256,512,1024,2048,4096}] [--16]
                   [-m MID_WIDTH_PCT] [-o MID_YOFFSET] [-e {2,3,4,5,6,7,8,9}]
-                  [--tanh TANH] [-B BEZIER] [-L] [--savgol SAVGOL]
-                  [--gauss GAUSS] [--bitcrush BITCRUSH] [--dco] [--graph]
-                  [--graph3d] [--png] [--wav] [--wt] [--h2p] [--gif]
+                  [--tanh TANH] [-B BEZIER] [-L] [--rev] [--shift SHIFT]
+                  [--savgol SAVGOL] [--gauss GAUSS] [--bitcrush BITCRUSH]
+                  [--graph] [--graph3d] [--png] [--wav] [--wt] [--h2p] [--gif]
                   [--dpi DPI] [--fontsize FONTSIZE] [-O] [--fullfn]
 
 options:
@@ -65,13 +65,14 @@ Waveform options:
   -B BEZIER             Bezier control points float multiplier, best -9.0 to
                         4.0
   -L                    Direct line instead of curve
+  --rev                 Reverse waveform
+  --shift SHIFT         Shift (roll) waveform, int samples
 
 Filter options:
   --savgol SAVGOL       Savitzky-Golay filter window_len(%),polyorder, e.g.
                         51,3
   --gauss GAUSS         Gaussian filter int sigma, e.g. 2
   --bitcrush BITCRUSH   Bitcrush int depth, e.g. 5
-  --dco                 DC offset WIP!
 
 Output options:
   --graph               Plot graph

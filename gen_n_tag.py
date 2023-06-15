@@ -86,7 +86,7 @@ def mk_png(d):
 
 def gen_direct():
     print('variable direct')
-    mid=30
+    mid=60
     ga=35
     for o in range(-25,26,5):
         #mk_gif({'num_waveforms': 64, 'num_samples': 256, 'mid_yoffset': o,
@@ -159,16 +159,32 @@ def gen_tanh():
 
 def gen_exp():
     print('variable offset/exp')
-    for e in range(2, 9, 2):
+    for e in range(2, 9, 1):
         for o in [-20, -10, 0, 15, 25]:
-            #mk_gif({'num_waveforms': 64, 'num_samples': 256, 'exp': e,
+            #mk_png({'num_waveforms': 64, 'num_samples': 256, 'exp': e,
             #        'mid_yoffset': o})
+            #continue
             mk_wav({'num_waveforms': wa, 'num_samples': sa, 'exp': e,
                     'mid_yoffset': o})
             mk_wt({'num_waveforms': wa, 'num_samples': sa, 'exp': e,
                    'mid_yoffset': o})
             mk_h2p({'exp': e, 'mid_yoffset': o})
 
+def gen_shift():
+    print('shift')
+    for sh in [int(x) for x in [sa*0.25, sa*0.5, sa*0.75]]:
+        for o in [-25, 0, 25]:
+            #mk_png({'num_waveforms': wa, 'num_samples': sa,
+            #        'mid_yoffset': o, 'shift': sh})
+            # continue
+            mk_wav({'num_waveforms': wa, 'num_samples': sa,
+                    'mid_yoffset': o, 'shift': sh})
+            mk_wt({'num_waveforms': wa, 'num_samples': sa,
+                    'mid_yoffset': o, 'shift': sh})
+            mk_h2p({'num_waveforms': wa, 'num_samples': sa,
+                    'mid_yoffset': o, 'shift': sh})
+
+gen_shift()
 gen_direct()
 gen_savgol()
 gen_gauss()
