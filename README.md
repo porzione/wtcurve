@@ -30,6 +30,8 @@ I have tested the 32-bit float WAV wavetables with the Linux versions of [Surge 
 
 ![Bitcrush](images/60m_25h_5e_bc4_anim.gif "Bitcrush")
 
+![Reverse and shift](images/60m_00h_F1bz_rev_sh1024_anim.gif "Reverse and shift")
+
 Defaults: 32 bit float WAV, 256 waveforms, 2048 samples.
 
 Requirements: Python 3 with [NumPy](https://numpy.org/install/), [SciPy](https://scipy.org/), [Matplotlib](https://matplotlib.org), [soundfile](https://github.com/bastibe/python-soundfile).
