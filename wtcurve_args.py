@@ -40,7 +40,7 @@ defaults = {
     "dpi": 200,
     "fontsize": 8,
     "exponent": 5,
-    "mid_width_pct": 60,
+    "mid_width_pct": 90,
     "mid_yoffset": 25
 }
 

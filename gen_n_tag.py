@@ -3,10 +3,8 @@
 
 import os
 import shutil
-# import numpy as np
 import wtcurve
 import wttag
-# import wtcurve_args
 
 # destination paths for tagged files
 wav_path = '/home/ftp/audio/Wavetables/WT1/My'
@@ -75,13 +73,10 @@ def mk_png(d):
 
 def gen_direct():
     print('variable direct')
-    mid=90
     ga=35
     for o in range(-25,26,5):
         bdict = {'num_waveforms': wl, 'num_samples': sa, 'dline': True,
-                 'mid_yoffset': o, 'mid_width_pct': mid}
-        # mk_gif(bdict)
-        # mk_gif(bdict|{'gauss': ga})
+                 'mid_yoffset': o}
         mk_wav(bdict)
         mk_wav(bdict|{'gauss': ga})
         mk_wt(bdict|{'num_samples': sa_wt})
@@ -139,10 +134,10 @@ def gen_tanh():
 
 def gen_exp():
     print('variable offset/exp')
-    for e in range(2, 9, 1):
+    for e in range(3, 8, 2):
         for o in [-20, -10, 0, 15, 25]:
             bdict = {'num_waveforms': wa, 'num_samples': sa, 'exp': e,
-                    'mid_yoffset': o}
+                     'mid_yoffset': o}
             mk_wav(bdict)
             mk_wt(bdict)
             mk_h2p(bdict)
@@ -150,27 +145,27 @@ def gen_exp():
 def gen_shift():
     print('shift')
     bdict = {'num_waveforms': wa, 'num_samples': sa, 'mid_yoffset': 0,
-             'shift': sa // 2, 'mid_width_pct': 99}
+             'shift': sa // 2, 'mid_width_pct': 100}
     # bdict['gif'] = True
     mk_wav(bdict|{'exp': 2})
-    mk_wav(bdict|{'tanh': 1.5})
+    mk_wav(bdict|{'tanh': 1.5, 'mid_width_pct': 99})
     mk_wav(bdict|{'bezier': 0 })
     mk_wav(bdict|{'dline': True })
     mk_wt(bdict|{'exp': 2})
-    mk_wt(bdict|{'tanh': 1.5})
+    mk_wt(bdict|{'tanh': 1.5, 'mid_width_pct': 99})
     mk_wt(bdict|{'bezier': 0 })
     mk_wt(bdict|{'dline': True })
     bdict['shift'] = 64  # h2p has fixed 128 samples
     mk_h2p(bdict|{'exp': 2})
-    mk_h2p(bdict|{'tanh': 1.5})
+    mk_h2p(bdict|{'tanh': 1.5, 'mid_width_pct': 99})
     mk_h2p(bdict|{'bezier': 0})
     mk_h2p(bdict|{'dline': True})
 
 gen_shift()
+gen_exp()
 gen_direct()
 gen_savgol()
 gen_gauss()
 gen_bitcrush()
 gen_bezier()
 gen_tanh()
-gen_exp()
