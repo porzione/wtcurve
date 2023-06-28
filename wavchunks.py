@@ -93,6 +93,7 @@ class ChunkProcessor:
             b'fact': self.process_skip,
             b'junk': self.process_skip,
             b'smpl': self.process_skip,
+            b'FLLR': self.process_skip,
         }
 
         with open(self.file, 'rb') as f:
@@ -108,7 +109,7 @@ class ChunkProcessor:
                         chunk_processors[chid](data)
                     else:
                         print('WHAT?')
-                        hexdump(data[:10])
+                        hexdump(data[:16])
                 except struct.error:
                     print(f'data chunks: {self.datac} size: {self.datasz}')
                     if self.waveforms > 0:
