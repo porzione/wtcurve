@@ -135,7 +135,7 @@ def gen_tanh():
 def gen_exp():
     print('variable offset/exp')
     for e in range(3, 8, 2):
-        for o in [-20, -10, 0, 15, 25]:
+        for o in range(-20, 26, 5):
             bdict = {'num_waveforms': wa, 'num_samples': sa, 'exp': e,
                      'mid_yoffset': o}
             mk_wav(bdict)
