@@ -9,7 +9,10 @@ import wttag
 # destination paths for tagged files
 wav_path = '/home/ftp/audio/Wavetables/WT1/My'
 wt_path = os.path.expanduser('~/Music/Bitwig/Library/Wavetables/WT1/My')
-h2p_path = os.path.expanduser('~/.u-he/Zebra2/Modules/Oscillator/My')
+h2p_paths = [os.path.expanduser(i) for i in [
+        '~/.u-he/Zebra2/Modules/Oscillator/My',
+        '~/.u-he/ZebraHZ/Modules/Oscillator/My'
+    ]]
 # samples
 sa = 2048
 # samples in simple wt waveforms
@@ -24,7 +27,8 @@ types = ['bezier', 'tanh', 'dline', 'exp']
 for t in types:
     os.makedirs(os.path.join(wav_path, t), exist_ok=True)
     os.makedirs(os.path.join(wt_path, t), exist_ok=True)
-    os.makedirs(os.path.join(h2p_path, t), exist_ok=True)
+    for path in h2p_paths:
+        os.makedirs(os.path.join(path, t), exist_ok=True)
 
 
 def tpath(d):
@@ -60,7 +64,9 @@ def mk_h2p(d):
     wtc = wtcurve.WtCurve(d|{'h2p': True})
     wtc.generate()
     fn = wtc.fmt_fname('h2p')
-    dn = os.path.join(h2p_path, tpath(d), fn)
+    dn = os.path.join(h2p_paths[0], tpath(d), fn)
+    shutil.copy(fn, dn)
+    dn = os.path.join(h2p_paths[1], tpath(d), fn)
     shutil.move(fn, dn)
 
 def mk_gif(d):
