@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+""" generate wavetables for audio synthesizers: WAV, WT, h2p, graphs, gif """
+
 import subprocess
 import sys
 import types

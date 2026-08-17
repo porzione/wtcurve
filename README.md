@@ -8,7 +8,9 @@ By manipulating parameters such as Savitzky-Golay `--savgol`, Gaussian filter `-
 
 `gen_n_tag.py` is a sample script demonstrating how to programmatically generate multiple wavetables, note that destination paths are hard-coded.
 
-I have tested the 32-bit float WAV wavetables with the Linux versions of [Surge XT](https://surge-synthesizer.github.io/), [Bitwig Studio Grid](https://www.bitwig.com/the-grid/), [u-he Hive 2](https://u-he.com/products/hive/), and the [Vital](https://vital.audio/) software synthesizers. For compatibility reasons, it is recommended to leave the default number of samples as 2048 (do not use `-s` flag). Only Surge XT is able to load tagged wavetables with arbitrary number of samples. 16-bit int and 32-bit float wt wavetables tested with Surge XT and Bitwig.
+I have tested the 32-bit float WAV wavetables with the Linux versions of [Surge XT](https://surge-synthesizer.github.io/), [Bitwig Studio Grid](https://www.bitwig.com/the-grid/), [u-he Hive 2](https://u-he.com/products/hive/), and the [Vital](https://vital.audio/) software synthesizers. For compatibility reasons, it is recommended to leave the default number of samples as 2048 (do not use `-s` flag). Only Surge XT is able to load tagged wavetables with arbitrary number of samples. 16-bit int and 32-bit float wt wavetables tested with Surge XT and Bitwig. The `--h2p` option saves a u-he Zebra 2 / ZebraHZ oscillator preset; this format is fixed at 16 waveforms of 128 samples, which are generated separately without affecting other outputs.
+
+Output file names encode the parameters: `90m_25h_5e.wav` means middle part width 90% (`-m`), y-offset 25% (`-o`), exponential curve with exponent 5 (`-e`); `F4ht` is tanh 4.0, `F-7bz` is Bezier -7.0, `dl` is direct line. Filter and transform suffixes: `_sg` savgol, `_ga` gauss, `_bc` bitcrush, `_rev` reverse, `_sh` shift, `_no` normalize. With `--fullfn`, samples and waveforms counts are appended, e.g. `_2048s_256w`.
 
 ### Visuals
 
@@ -34,7 +36,11 @@ I have tested the 32-bit float WAV wavetables with the Linux versions of [Surge 
 
 Defaults: 32 bit float WAV, 256 waveforms, 2048 samples.
 
-Requirements: Python 3 with [NumPy](https://numpy.org/install/), [SciPy](https://scipy.org/), [Matplotlib](https://matplotlib.org), [soundfile](https://github.com/bastibe/python-soundfile).
+Requirements: Python 3 with [NumPy](https://numpy.org/install/), [SciPy](https://scipy.org/), [Matplotlib](https://matplotlib.org), [soundfile](https://github.com/bastibe/python-soundfile), installable with:
+
+```text
+pip install -r requirements.txt
+```
 
 Surely there are bugs here.
 
@@ -61,7 +67,7 @@ Waveform options:
   -s {16,32,64,128,256,512,1024,2048,4096}
                         Number of samples in waveform (default: 2048)
   --16                  Make 16-bit wavetable (default: 32)
-  -m MID_WIDTH_PCT      Middle part width in % (default: 60)
+  -m MID_WIDTH_PCT      Middle part width in % (default: 90)
   -o MID_YOFFSET        Offset from y-axis in % (default: 25)
   -e {2,3,4,5,6,7,8,9}  Exponent of curve (default: 5)
   --tanh TANH           Hyperbolic float tangent, e.g. 4.0
@@ -97,7 +103,30 @@ Output options:
 To ensure compatibility with most synthesizers, wavetables need to be tagged with the wttag script, using the same -w and -s values as specified for the wtcurve. This script adds a WAV chunk to the WAV file, indicating the number of waveforms or samples based on the chunk type. In most cases, using --clm should work fine. Please note that I am unable to test the output WAVs with Serum as I don't have access to it. Example:
 
 ```text
-wttag -s 2048 -w 256 -i 60m_25h_5e_2048s_256w.wav -o 60m_25h_5e.wav --clm
+wttag.py -s 2048 -w 256 -i 90m_25h_5e_2048s_256w.wav -o 90m_25h_5e.wav --clm
+```
+
+```text
+$ wttag.py --help
+
+usage: wttag.py [-h] [-w NUM_WAVEFORMS] -s
+                {8,16,32,64,128,256,512,1024,2048,4096} [--surge] [--uhe]
+                [--clm] -i SRC_FILE -o DST_FILE [--of] [--ot] [-m] [-a]
+
+options:
+  -h, --help            show this help message and exit
+  -w NUM_WAVEFORMS      Number of frames/waveforms
+  -s {8,16,32,64,128,256,512,1024,2048,4096}
+                        Number of samples in one frame
+  --surge               Add Surge tag
+  --uhe                 Add u-he (e.g. Hive) tag
+  --clm                 Add clm (e.g. Serum) tag
+  -i SRC_FILE           Source file
+  -o DST_FILE           Output file
+  --of                  Overwrite output file
+  --ot                  Overwrite tags
+  -m                    Make destination directories
+  -a                    Do not skip extra tags
 ```
 
 ### Screenshots
@@ -109,6 +138,15 @@ Hive 2 wavetable oscillator
 Vital oscillators
 
 ![Vital editor](images/vital_wt.jpg)
+
+## wavchunks
+
+`wavchunks.py` is an inspection tool: it dumps the RIFF chunks of WAV files (fmt, data, and wavetable tags like `clm `, `uhWT`, `srge`), prints the first sample values and tries to derive the waveforms/samples layout from the tags. Useful for examining both generated and third-party wavetables. It takes file or directory arguments:
+
+```text
+wavchunks.py 90m_25h_5e.wav
+wavchunks.py ~/Music/Wavetables
+```
 
 ## (C)
 

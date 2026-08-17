@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=too-many-nested-blocks
 
+""" tag WAV wavetables with clm/surge/u-he chunks for synth compatibility """
+
 from argparse import ArgumentParser
 import types
 import struct

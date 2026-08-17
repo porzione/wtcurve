@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+""" inspect RIFF chunks of WAV wavetable files """
+
 import struct
 import sys
 from pathlib import Path

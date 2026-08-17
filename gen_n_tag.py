@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+""" batch-generate and tag wavetables, destination paths are hard-coded """
+
 import os
 import shutil
 import wtcurve
