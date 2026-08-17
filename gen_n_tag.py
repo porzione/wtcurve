@@ -6,6 +6,7 @@
 import os
 import shutil
 import wtcurve
+import wtfile
 import wttag
 
 # destination paths for tagged files
@@ -164,7 +165,7 @@ def gen_shift():
     mk_wt(bdict|{'tanh': 1.5, 'mid_width_pct': 99})
     mk_wt(bdict|{'bezier': 0 })
     mk_wt(bdict|{'dline': True })
-    bdict['shift'] = 64  # h2p has fixed 128 samples
+    bdict['shift'] = wtfile.H2P_NUM_SAMPLES // 2
     mk_h2p(bdict|{'exp': 2})
     mk_h2p(bdict|{'tanh': 1.5, 'mid_width_pct': 99})
     mk_h2p(bdict|{'bezier': 0})

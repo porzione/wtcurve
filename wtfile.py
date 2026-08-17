@@ -20,9 +20,18 @@ Wave=2
 float Wave[%d];
 """
 H2P_FMULT = 0.999969
+# u-he Zebra 2 OSC format is fixed
+H2P_NUM_WAVEFORMS = 16
+H2P_NUM_SAMPLES = 128
 
 def print_err(msg):
     print(msg, file=sys.stderr)
+
+
+def normalize(arr, level=1.0):
+    """ scale array so the absolute peak equals level """
+    peak = np.max(np.abs(arr))
+    return arr / peak * level if peak > 0 else arr
 
 
 class Wt:
@@ -51,10 +60,7 @@ class Wt:
         self.normalize = bool(is_required)
 
     def _normalized(self):
-        if not self.normalize:
-            return self.wf
-        peak = np.max(np.abs(self.wf))
-        return self.wf / peak if peak > 0 else self.wf
+        return normalize(self.wf) if self.normalize else self.wf
 
     def save_wav(self, fn):
         """
@@ -107,7 +113,7 @@ class Wt:
     def save_h2p(self, fn):
         """
         save h2p wavetable for u-he Zebra 2 oscillator
-        source array should be (16, 128)
+        source array should be (H2P_NUM_WAVEFORMS, H2P_NUM_SAMPLES)
         format borrowed from
         https://github.com/harveyormston/osc_gen/blob/main/osc_gen/zosc.py
         """

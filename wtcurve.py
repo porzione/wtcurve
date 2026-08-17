@@ -14,10 +14,6 @@ from matplotlib import animation
 from wtcurve_args import setup_parser
 import wtfile
 
-# u-he Zebra 2 OSC h2p format is fixed
-H2P_NUM_WAVEFORMS = 16
-H2P_NUM_SAMPLES = 128
-
 
 class WtCurve:
     """ wavetable curve: compute data, save files """
@@ -34,6 +30,8 @@ class WtCurve:
         self.dbg = self.a.debug
         self.wt = []
         self.saved_files = []
+        self._prepare_mode()
+        self._prepare_suffix()
         self._prepare_values()
         # for attr, value in vars(self).items():
         #     if attr != 'mid_widths':
@@ -61,15 +59,14 @@ class WtCurve:
         if self.dbg:
             print(msg)
 
-    def _prepare_values(self):
-        if self.a.saw == 'harm':
-            self.curve_fn = None
-            self.title = 'Saw harmonics morph'
-            self.mtype = 'saw_harm'
-        elif self.a.saw == 'skew':
-            self.curve_fn = None
-            self.title = 'Saw skew morph'
-            self.mtype = 'saw_skew'
+    def _prepare_mode(self):
+        """ choose the waveform family, its title and file name type """
+        if self.a.saw:
+            self.frame_fn = (self._saw_harm_frame if self.a.saw == 'harm'
+                             else self._saw_skew_frame)
+            morph = 'harmonics' if self.a.saw == 'harm' else 'skew'
+            self.title = f'Saw {morph} morph'
+            self.mtype = f'saw_{self.a.saw}'
         elif isinstance(self.a.bezier, (float, int)):
             self.curve_fn = self._bezier_curve
             self.title = f'Bézier {self.a.bezier}'
@@ -86,6 +83,8 @@ class WtCurve:
             self.curve_fn = self._exp_curve
             self.title = f'Exponent {self.a.exp}'
             self.mtype = f'{self.a.exp}e'
+    def _prepare_suffix(self):
+        """ title and file name parts from filters and transforms """
         self.suffix = ''
         if isinstance(self.a.savgol, tuple):
             self.title = f'{self.title} savgol={self.a.savgol}'
@@ -106,26 +105,23 @@ class WtCurve:
             self.title = f'{self.title} norm={self.a.norm:.2g}'
             self.suffix = f'{self.suffix}_no{self.a.norm:.2g}'
 
-        self.num_samples = self.a.num_samples
-        self.num_waveforms = self.a.num_waveforms
+    def _prepare_values(self):
+        if self.a.saw:
+            self.fname_prefix = ''
+        else:
+            self.frame_fn = self._curve_frame
+            self.title = (f'{self.title} m={self.a.mid_width_pct}% '
+                          f'o={self.a.mid_yoffset}%')
+            ywidth = 2 if self.a.mid_yoffset >= 0 else 3
+            self.fname_prefix = (f'{self.a.mid_width_pct}m_'
+                                 f'{self.a.mid_yoffset:0{ywidth}d}h_')
 
+        if self.a.savgol and self.a.savgol[0] not in range(1, 100):
+            raise ValueError('savgol window should be in range 1-100%')
+
+        self._harm_csums = {}
         self.mid_yoffset = self.a.mid_yoffset * 0.01
         self._debug(f'mid_yoffset: {self.mid_yoffset}')
-
-    def _mid_widths(self, num_waveforms, num_samples):
-        mid_samples = int((self.a.mid_width_pct / 100) * num_samples)
-        mid_samples -= mid_samples % 2
-        self._debug(f'mid_samples: {mid_samples} '
-                    f'({self.a.mid_width_pct}% of {num_samples})')
-
-        if num_waveforms > 1:
-            mid_widths = np.round(mid_samples * np.arange(num_waveforms) /
-                                  (num_waveforms - 1)).astype(int)
-        else:
-            mid_widths = np.array([mid_samples])
-        mid_widths -= mid_widths % 2
-        self._debug(f'mid_widths: {mid_widths}')
-        return mid_widths
 
     def wavetable(self):
         return self.wt
@@ -180,15 +176,10 @@ class WtCurve:
 
     def fmt_fname(self, ext, add=None):
         """ format file name """
-        if self.a.saw:
-            fname = f'{self.mtype}{self.suffix}'
-        else:
-            ywidth = 2 if self.a.mid_yoffset >= 0 else 3
-            fname = (f'{self.a.mid_width_pct}m_{self.a.mid_yoffset:0{ywidth}d}h_'
-                     f'{self.mtype}{self.suffix}')
+        fname = f'{self.fname_prefix}{self.mtype}{self.suffix}'
         if ext in ['wav', 'wt']:
             if self.a.fullname:
-                fname = f'{fname}_{self.num_samples}s_{self.num_waveforms}w'
+                fname = f'{fname}_{self.a.num_samples}s_{self.a.num_waveforms}w'
         elif ext == 'gif':
             fname = f'{fname}_anim'
         elif ext not in ['png', 'h2p']:
@@ -198,14 +189,10 @@ class WtCurve:
         return f'{fname}.{ext}'
 
     def _title(self):
-        if self.a.saw:
-            return f'{self.title} s={self.num_samples} w={self.num_waveforms}'
-        return (f'{self.title} m={self.a.mid_width_pct}% '
-                f'o={self.a.mid_yoffset}% '
-                f's={self.num_samples} w={self.num_waveforms}')
+        return f'{self.title} s={self.a.num_samples} w={self.a.num_waveforms}'
 
     def _mk_graph(self):
-        x = np.linspace(0, 100, self.num_samples)
+        x = np.linspace(0, 100, self.a.num_samples)
         plt.xticks(np.arange(min(x), max(x)+1, 25))
         plt.plot(x,self.wt[0], 'm-', label='first waveform')
         plt.plot(x,self.wt[-1], 'c-', label='last waveform')
@@ -248,7 +235,7 @@ class WtCurve:
     def _mk_gif(self):
         fig, ax = plt.subplots()
         lines = []
-        for idx in np.linspace(0, self.num_waveforms - 1, 6).astype(int):
+        for idx in np.linspace(0, self.a.num_waveforms - 1, 6).astype(int):
             line, = ax.plot(self.wt[idx], 'm-')
             lines.append([line])
         ax.xaxis.set_ticklabels([])
@@ -285,15 +272,21 @@ class WtCurve:
     def _mk_h2p(self):
         fn = self.fmt_fname('h2p')
         print(f'saving: {fn}')
-        # Zebra 2 OSC format is fixed at 16 waveforms of 128 samples,
-        # generate them separately so other outputs keep their own size
-        wt = wtfile.Wt(self._gen_waveforms(H2P_NUM_WAVEFORMS, H2P_NUM_SAMPLES))
+        # h2p size is fixed, generate the waveforms separately
+        # so other outputs keep their own size
+        wt = wtfile.Wt(self._gen_waveforms(wtfile.H2P_NUM_WAVEFORMS,
+                                           wtfile.H2P_NUM_SAMPLES))
         wt.save_h2p(fn)
 
-    def _curve_frame(self, cx, mid_width, num_samples):
+    def _curve_frame(self, t, num_samples):
         """ single frame: two curves joined by the middle line """
+        mid_samples = int((self.a.mid_width_pct / 100) * num_samples)
+        mid_samples -= mid_samples % 2
+        mid_width = int(np.round(mid_samples * t))
+        mid_width -= mid_width % 2
+        cx = t * self.a.mid_width_pct / 100
         curve_len = num_samples // 2 - mid_width // 2
-        self._debug(f'curve_len: {curve_len}, mw: {mid_width}, '
+        self._debug(f'cx: {cx} curve_len: {curve_len}, mw: {mid_width}, '
                     f'sum: {curve_len*2+mid_width}')
         ya1 = self.curve_fn(-1, -1, -cx, -self.mid_yoffset, curve_len)
         self._debug(f'ya1: {ya1} ({len(ya1)})')
@@ -303,21 +296,30 @@ class WtCurve:
         self._debug(f'ym: {ym} ({len(ym)})')
         return np.concatenate((ya1, ym, ya2))
 
-    def _saw_frame(self, t, num_samples):
-        """ single morphing sawtooth frame, morph position t in [0, 1] """
-        if self.a.saw == 'harm':
-            # additive saw: harmonics count grows geometrically with t,
-            # equal fundamental level across frames
+    def _saw_harm_frame(self, t, num_samples):
+        """
+        additive saw frame: harmonics count grows geometrically with t,
+        equal fundamental level across frames
+        """
+        csum = self._harm_csums.get(num_samples)
+        if csum is None:
+            # cumulative sums over the 1/k harmonic series, computed once:
+            # a frame with n harmonics is just row n-1
             max_harm = max(1, num_samples // 4)
-            n = int(round(max_harm ** t))
-            self._debug(f'harmonics: {n}')
             x = np.arange(num_samples) / num_samples
-            k = np.arange(1, n + 1)
-            return (2 / np.pi) * np.sum(
-                np.sin(2 * np.pi * np.outer(k, x)) / k[:, None], axis=0)
+            k = np.arange(1, max_harm + 1)
+            csum = np.cumsum(np.sin(2 * np.pi * np.outer(k, x)) / k[:, None],
+                             axis=0)
+            self._harm_csums[num_samples] = csum
+        n = int(round(len(csum) ** t))
+        self._debug(f'harmonics: {n}')
+        return (2 / np.pi) * csum[n - 1]
 
-        # skew: ramp turnaround moves from first sample (reverse saw)
-        # through the middle (triangle) to last sample (saw)
+    def _saw_skew_frame(self, t, num_samples):
+        """
+        sawtooth skew frame: ramp turnaround moves from first sample
+        (reverse saw) through the middle (triangle) to last sample (saw)
+        """
         peak = int(round(t * (num_samples - 1)))
         self._debug(f'skew peak: {peak}')
         y = np.empty(num_samples)
@@ -325,10 +327,10 @@ class WtCurve:
         y[peak:] = np.linspace(1, -1, num_samples - peak)
         return y
 
-    def _post_process(self, y, num_samples):
+    def _post_process(self, y):
         """ filters and transforms applied to one frame """
         if self.a.savgol:
-            wlen = int(num_samples / 100 * self.a.savgol[0])
+            wlen = int(len(y) / 100 * self.a.savgol[0])
             y = savgol_filter(y, window_length=wlen, polyorder=self.a.savgol[1])
         if self.a.gauss:
             y = gaussian_filter1d(y, sigma=self.a.gauss)
@@ -340,35 +342,20 @@ class WtCurve:
         if self.a.shift:
             y = np.roll(y, shift=self.a.shift)
         if self.a.norm:
-            y = y / np.max(np.abs(y)) * self.a.norm
+            y = wtfile.normalize(y, self.a.norm)
         return y
 
     def _gen_waveforms(self, num_waveforms, num_samples):
         """ compute wavetable array with shape (num_waveforms, num_samples) """
-        wt = np.zeros((num_waveforms, num_samples))
-        self._debug(f'wt shape: {wt.shape}')
-        if self.a.savgol and self.a.savgol[0] not in range(1, 100):
-            raise ValueError('savgol window should be in range 1-100%')
-
-        if self.a.saw:
-            morphs = np.linspace(0, 1, num_waveforms) if num_waveforms > 1 else [1.0]
-            for i in range(num_waveforms):
-                wt[i] = self._post_process(self._saw_frame(morphs[i], num_samples),
-                                           num_samples)
-            return wt
-
-        mid_widths = self._mid_widths(num_waveforms, num_samples)
-        xoffsets = np.linspace(0, self.a.mid_width_pct / 100, num_waveforms)
-        for i in range(num_waveforms):
-            self._debug(f'i: {i} cx: {xoffsets[i]}')
-            y = self._curve_frame(xoffsets[i], mid_widths[i], num_samples)
-            self._debug(f'y: {y} {y.shape}')
-            wt[i] = self._post_process(y, num_samples)
-
-        return wt
+        if num_waveforms > 1:
+            morphs = np.linspace(0, 1, num_waveforms)
+        else:
+            morphs = np.array([1.0])
+        return np.array([self._post_process(self.frame_fn(t, num_samples))
+                         for t in morphs])
 
     def generate(self):
-        self.wt = self._gen_waveforms(self.num_waveforms, self.num_samples)
+        self.wt = self._gen_waveforms(self.a.num_waveforms, self.a.num_samples)
 
         if self.dbg:
             np.set_printoptions(threshold=np.inf, precision=None, suppress=True)
