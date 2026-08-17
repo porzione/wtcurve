@@ -37,7 +37,7 @@ class ChunkProcessor:
             self.fmtd = dict(zip(keys, unp))
             print(self.fmtd)
             if len(data) > 16:
-                ext_size = struct.unpack('<H', data[16:18])
+                ext_size = struct.unpack('<H', data[16:18])[0]
                 print(f'extension size: {ext_size}')
         except struct.error as e:
             print("unpack fmt exception:", e)
@@ -52,9 +52,9 @@ class ChunkProcessor:
         length = len(data) // (bits // 8)
         try:
             if bits == 32:
-                return struct.unpack(f'{length}f', data)
+                return struct.unpack(f'<{length}f', data)
             if bits == 16:
-                return struct.unpack(f'{length}H', data)
+                return struct.unpack(f'<{length}h', data)
         except struct.error as e:
             print(f"unpack exception: {e}")
         return None
@@ -103,6 +103,8 @@ class ChunkProcessor:
                     self.raw_h = f.read(8)
                     chid, self.chsize = struct.unpack('<4sI', self.raw_h)
                     data = f.read(self.chsize)
+                    if self.chsize % 2:
+                        f.read(1)  # RIFF word-alignment pad byte
                     print(f'chunk id: {chid}, size: {self.chsize}')
 
                     if chid in chunk_processors:

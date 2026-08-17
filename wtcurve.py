@@ -12,6 +12,10 @@ from matplotlib import animation
 from wtcurve_args import setup_parser
 import wtfile
 
+# u-he Zebra 2 OSC h2p format is fixed
+H2P_NUM_WAVEFORMS = 16
+H2P_NUM_SAMPLES = 128
+
 
 class WtCurve:
     """ wavetable curve: compute data, save files """
@@ -92,25 +96,26 @@ class WtCurve:
             self.title = f'{self.title} norm={self.a.norm:.2g}'
             self.suffix = f'{self.suffix}_no{self.a.norm:.2g}'
 
-        if self.a.h2p:
-            self.num_samples = 128
-            self.num_waveforms = 16
-        else:
-            self.num_samples = self.a.num_samples
-            self.num_waveforms = self.a.num_waveforms
-
-        self.mid_samples = int((self.a.mid_width_pct / 100) * self.num_samples)
-        self.mid_samples -= self.mid_samples % 2
-        self._debug(f'mid_samples: {self.mid_samples} '
-                    '({self.a.mid_width_pct}% of {self.num_samples})')
-
-        self.mid_widths = np.round(self.mid_samples * np.arange(self.num_waveforms) /
-                              (self.num_waveforms - 1)).astype(int)
-        self.mid_widths -= self.mid_widths % 2
-        self._debug(f'mid_widths: {self.mid_widths}')
+        self.num_samples = self.a.num_samples
+        self.num_waveforms = self.a.num_waveforms
 
         self.mid_yoffset = self.a.mid_yoffset * 0.01
         self._debug(f'mid_yoffset: {self.mid_yoffset}')
+
+    def _mid_widths(self, num_waveforms, num_samples):
+        mid_samples = int((self.a.mid_width_pct / 100) * num_samples)
+        mid_samples -= mid_samples % 2
+        self._debug(f'mid_samples: {mid_samples} '
+                    f'({self.a.mid_width_pct}% of {num_samples})')
+
+        if num_waveforms > 1:
+            mid_widths = np.round(mid_samples * np.arange(num_waveforms) /
+                                  (num_waveforms - 1)).astype(int)
+        else:
+            mid_widths = np.array([mid_samples])
+        mid_widths -= mid_widths % 2
+        self._debug(f'mid_widths: {mid_widths}')
+        return mid_widths
 
     def wavetable(self):
         return self.wt
@@ -226,11 +231,10 @@ class WtCurve:
         plt.close()
 
     def _mk_gif(self):
-        pct1 = self.num_waveforms / 100
         fig, ax = plt.subplots()
         lines = []
-        for pct in range(0, 100, 20):
-            line, = ax.plot(self.wt[int(pct*pct1)], 'm-')
+        for idx in np.linspace(0, self.num_waveforms - 1, 6).astype(int):
+            line, = ax.plot(self.wt[idx], 'm-')
             lines.append([line])
         ax.xaxis.set_ticklabels([])
         ax.set_ylabel('Amplitude', fontsize=self.a.fontsize)
@@ -266,35 +270,39 @@ class WtCurve:
     def _mk_h2p(self):
         fn = self.fmt_fname('h2p')
         print(f'saving: {fn}')
-        wt = wtfile.Wt(self.wt)
+        # Zebra 2 OSC format is fixed at 16 waveforms of 128 samples,
+        # generate them separately so other outputs keep their own size
+        wt = wtfile.Wt(self._gen_waveforms(H2P_NUM_WAVEFORMS, H2P_NUM_SAMPLES))
         wt.save_h2p(fn)
 
-    def generate(self):
-        self.wt = np.zeros((self.num_waveforms, self.num_samples))
-        self._debug(f'wt shape: {self.wt.shape}')
-        xoffsets = np.linspace(0, self.a.mid_width_pct / 100, self.num_waveforms)
+    def _gen_waveforms(self, num_waveforms, num_samples):
+        """ compute wavetable array with shape (num_waveforms, num_samples) """
+        wt = np.zeros((num_waveforms, num_samples))
+        self._debug(f'wt shape: {wt.shape}')
+        if self.a.savgol and self.a.savgol[0] not in range(1, 100):
+            raise ValueError('savgol window should be in range 1-100%')
+        mid_widths = self._mid_widths(num_waveforms, num_samples)
+        xoffsets = np.linspace(0, self.a.mid_width_pct / 100, num_waveforms)
 
-        for i in range(self.num_waveforms):
+        for i in range(num_waveforms):
             cx = xoffsets[i]
             self._debug(f'cx: {cx}')
 
-            curve_len = self.num_samples // 2 - self.mid_widths[i] // 2
+            curve_len = num_samples // 2 - mid_widths[i] // 2
             self._debug(
-                f'i: {i} curve_len: {curve_len}, mw: {self.mid_widths[i]}, '
-                f'sum: {curve_len*2+self.mid_widths[i]}')
+                f'i: {i} curve_len: {curve_len}, mw: {mid_widths[i]}, '
+                f'sum: {curve_len*2+mid_widths[i]}')
 
             ya1 = self.curve_fn(-1, -1, -cx, -self.mid_yoffset, curve_len)
             self._debug(f'ya1: {ya1} ({len(ya1)})')
             ya2 = self.curve_fn(cx, self.mid_yoffset, 1, 1, curve_len)
             self._debug(f'ya2: {ya2} ({len(ya2)})')
-            ym = self._line(-cx, -self.mid_yoffset, cx, self.mid_yoffset, self.mid_widths[i])
+            ym = self._line(-cx, -self.mid_yoffset, cx, self.mid_yoffset, mid_widths[i])
             self._debug(f'ym: {ym} ({len(ym)})')
             y = np.concatenate((ya1, ym, ya2))
             self._debug(f'y: {y} {y.shape}')
             if self.a.savgol:
-                if not self.a.savgol[0] in range(1,100):
-                    raise ValueError('savgol window should be in range 1-100%')
-                wlen = int(self.num_samples / 100 * self.a.savgol[0])
+                wlen = int(num_samples / 100 * self.a.savgol[0])
                 y = savgol_filter(y, window_length=wlen, polyorder=self.a.savgol[1])
             if self.a.gauss:
                 y = gaussian_filter1d(y, sigma=self.a.gauss)
@@ -309,7 +317,12 @@ class WtCurve:
                 abs_max = np.max(np.abs(y))
                 y = y / abs_max * self.a.norm
 
-            self.wt[i] = y
+            wt[i] = y
+
+        return wt
+
+    def generate(self):
+        self.wt = self._gen_waveforms(self.num_waveforms, self.num_samples)
 
         if self.dbg:
             np.set_printoptions(threshold=np.inf, precision=None, suppress=True)

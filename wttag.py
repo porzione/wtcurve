@@ -115,6 +115,10 @@ class Tagger:
             print('Source and destination are the same file')
             sys.exit(3)
 
+        if self.a.tag_uhe and not self.a.num_waveforms:
+            print('-w (number of waveforms) is required for the u-he tag')
+            sys.exit(4)
+
         dst_path = os.path.dirname(self.a.dst_file)
         if not os.path.isdir(dst_path) and self.a.mkdir:
             print(f'mkdir: {dst_path}')
@@ -151,6 +155,8 @@ class Tagger:
                         print(f'chunk id: {chid}, size: {size}')
                         data = bytearray(src.read(size))
                         # print(f'read size: {len(data)}')
+                        # RIFF chunks are word-aligned: odd size implies a pad byte
+                        pad = src.read(1) if size % 2 else b''
                         if chid in [b'PEAK', b'fact'] and not self.a.all_tags:
                             continue
                         if chid == b'fmt ':
@@ -168,15 +174,15 @@ class Tagger:
 
                         dst.write(head)
                         dst.write(data)
+                        dst.write(pad)
 
                     except struct.error:
                         break
 
                 # update size in header
-                dst_size = os.fstat(dst.fileno()).st_size
+                dst_size = dst.tell()
                 dst.seek(4)
                 dst.write((dst_size - 8).to_bytes(4, 'little'))
-                dst.close()
 
 
 def __main__():

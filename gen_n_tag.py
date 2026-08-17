@@ -51,6 +51,7 @@ def mk_wav(d):
         'ov_file': True,
         'mkdir': True, 'tag_clm': True})
     tagger.tag()
+    os.remove(fn)
 
 def mk_wt(d):
     wtc = wtcurve.WtCurve(d|{'wt': True, 'bitwidth': 16})

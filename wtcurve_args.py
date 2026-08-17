@@ -29,7 +29,7 @@ def tuple_2int(value):
 def restricted_float1(n):
     n = float(n)
     if n <= 0 or n >= 1.0:
-        raise ArgumentTypeError(f"{n} not in range [0, 1.0]")
+        raise ArgumentTypeError(f"{n} not in range (0, 1.0)")
     return n
 
 

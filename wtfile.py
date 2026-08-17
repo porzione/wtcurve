@@ -50,6 +50,12 @@ class Wt:
     def set_normalize(self, is_required):
         self.normalize = bool(is_required)
 
+    def _normalized(self):
+        if not self.normalize:
+            return self.wf
+        peak = np.max(np.abs(self.wf))
+        return self.wf / peak if peak > 0 else self.wf
+
     def save_wav(self, fn):
         """
         save WAV wavetable, 16 PCM / 32 float
@@ -60,7 +66,7 @@ class Wt:
             print_err(f'File "{fn}" exists')
             return
 
-        normalized = self.wf / np.max(np.abs(self.wf)) if self.normalize else self.wf
+        normalized = self._normalized()
 
         if self.bitwidth == 32:
             data = np.float32(normalized)
@@ -91,7 +97,7 @@ class Wt:
             header[10:12] = bytes([bits, 0])
             file.write(header)
 
-            normalized = self.wf / np.max(np.abs(self.wf)) if self.normalize else self.wf
+            normalized = self._normalized()
 
             if self.bitwidth == 32:
                 normalized.astype(np.float32).tofile(file)
@@ -101,7 +107,7 @@ class Wt:
     def save_h2p(self, fn):
         """
         save h2p wavetable for u-he Zebra 2 oscillator
-        source array should be (16, 256)
+        source array should be (16, 128)
         format borrowed from
         https://github.com/harveyormston/osc_gen/blob/main/osc_gen/zosc.py
         """
