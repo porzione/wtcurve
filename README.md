@@ -10,6 +10,16 @@ By manipulating parameters such as Savitzky-Golay `--savgol`, Gaussian filter `-
 
 I have tested the 32-bit float WAV wavetables with the Linux versions of [Surge XT](https://surge-synthesizer.github.io/), [Bitwig Studio Grid](https://www.bitwig.com/the-grid/), [u-he Hive 2](https://u-he.com/products/hive/), and the [Vital](https://vital.audio/) software synthesizers. For compatibility reasons, it is recommended to leave the default number of samples as 2048 (do not use `-s` flag). Only Surge XT is able to load tagged wavetables with arbitrary number of samples. 16-bit int and 32-bit float wt wavetables tested with Surge XT and Bitwig. The `--h2p` option saves a u-he Zebra 2 / ZebraHZ oscillator preset; this format is fixed at 16 waveforms of 128 samples, which are generated separately without affecting other outputs.
 
+### Morphing sawtooth
+
+The `--saw` option generates a morphing sawtooth instead of the curve waveform (`-m`, `-o` and the curve options are ignored, filters still apply). `--saw harm` builds each frame additively from `1/k` harmonics, with the harmonic count growing geometrically from 1 (pure sine) to samples/4 (band-limited saw, 512 harmonics at default settings); sweeping the wavetable position sounds like opening a low-pass filter. `--saw skew` moves the ramp turnaround point across the cycle, morphing a reverse saw through a triangle into a saw.
+
+![Saw harmonics morph](images/saw_harm_anim.gif "Saw harmonics morph")
+
+![Saw skew morph](images/saw_skew_anim.gif "Saw skew morph")
+
+### File names
+
 Output file names encode the parameters: `90m_25h_5e.wav` means middle part width 90% (`-m`), y-offset 25% (`-o`), exponential curve with exponent 5 (`-e`); `F4ht` is tanh 4.0, `F-7bz` is Bezier -7.0, `dl` is direct line. Filter and transform suffixes: `_sg` savgol, `_ga` gauss, `_bc` bitcrush, `_rev` reverse, `_sh` shift, `_no` normalize. With `--fullfn`, samples and waveforms counts are appended, e.g. `_2048s_256w`.
 
 ### Visuals
@@ -52,11 +62,11 @@ $ wtcurve.py --help
 usage: wtcurve.py [-h] [-D] [-w NUM_WAVEFORMS]
                   [-s {16,32,64,128,256,512,1024,2048,4096}] [--16]
                   [-m MID_WIDTH_PCT] [-o MID_YOFFSET] [-e {2,3,4,5,6,7,8,9}]
-                  [--tanh TANH] [-B BEZIER] [-L] [--rev] [--shift SHIFT]
-                  [--norm NORM] [--savgol SAVGOL] [--gauss GAUSS]
-                  [--bitcrush BITCRUSH] [--graph] [--graph3d] [--png] [--wav]
-                  [--wt] [--h2p] [--gif] [--dpi DPI] [--fontsize FONTSIZE]
-                  [-O] [--fullfn]
+                  [--tanh TANH] [-B BEZIER] [-L] [--saw {harm,skew}] [--rev]
+                  [--shift SHIFT] [--norm NORM] [--savgol SAVGOL]
+                  [--gauss GAUSS] [--bitcrush BITCRUSH] [--graph] [--graph3d]
+                  [--png] [--wav] [--wt] [--h2p] [--gif] [--dpi DPI]
+                  [--fontsize FONTSIZE] [-O] [--fullfn]
 
 options:
   -h, --help            show this help message and exit
@@ -73,6 +83,9 @@ Waveform options:
   --tanh TANH           Hyperbolic float tangent, e.g. 4.0
   -B BEZIER             Bezier control point float multiplier, best -9.0..4.0
   -L                    Direct line instead of curve
+  --saw {harm,skew}     Morphing sawtooth: harm morphs sine to saw by adding
+                        harmonics, skew morphs reverse saw to saw through
+                        triangle
   --rev                 Reverse waveform
   --shift SHIFT         Shift (roll) waveform, int samples
   --norm NORM           Normalize to, float, e.g. 0.8

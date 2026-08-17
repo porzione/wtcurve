@@ -62,7 +62,15 @@ class WtCurve:
             print(msg)
 
     def _prepare_values(self):
-        if isinstance(self.a.bezier, (float, int)):
+        if self.a.saw == 'harm':
+            self.curve_fn = None
+            self.title = 'Saw harmonics morph'
+            self.mtype = 'saw_harm'
+        elif self.a.saw == 'skew':
+            self.curve_fn = None
+            self.title = 'Saw skew morph'
+            self.mtype = 'saw_skew'
+        elif isinstance(self.a.bezier, (float, int)):
             self.curve_fn = self._bezier_curve
             self.title = f'Bézier {self.a.bezier}'
             self.mtype = f'F{self.a.bezier:.4g}bz'
@@ -172,9 +180,12 @@ class WtCurve:
 
     def fmt_fname(self, ext, add=None):
         """ format file name """
-        ywidth = 2 if self.a.mid_yoffset >= 0 else 3
-        fname = (f'{self.a.mid_width_pct}m_{self.a.mid_yoffset:0{ywidth}d}h_'
-                 f'{self.mtype}{self.suffix}')
+        if self.a.saw:
+            fname = f'{self.mtype}{self.suffix}'
+        else:
+            ywidth = 2 if self.a.mid_yoffset >= 0 else 3
+            fname = (f'{self.a.mid_width_pct}m_{self.a.mid_yoffset:0{ywidth}d}h_'
+                     f'{self.mtype}{self.suffix}')
         if ext in ['wav', 'wt']:
             if self.a.fullname:
                 fname = f'{fname}_{self.num_samples}s_{self.num_waveforms}w'
@@ -187,6 +198,8 @@ class WtCurve:
         return f'{fname}.{ext}'
 
     def _title(self):
+        if self.a.saw:
+            return f'{self.title} s={self.num_samples} w={self.num_waveforms}'
         return (f'{self.title} m={self.a.mid_width_pct}% '
                 f'o={self.a.mid_yoffset}% '
                 f's={self.num_samples} w={self.num_waveforms}')
@@ -277,48 +290,80 @@ class WtCurve:
         wt = wtfile.Wt(self._gen_waveforms(H2P_NUM_WAVEFORMS, H2P_NUM_SAMPLES))
         wt.save_h2p(fn)
 
+    def _curve_frame(self, cx, mid_width, num_samples):
+        """ single frame: two curves joined by the middle line """
+        curve_len = num_samples // 2 - mid_width // 2
+        self._debug(f'curve_len: {curve_len}, mw: {mid_width}, '
+                    f'sum: {curve_len*2+mid_width}')
+        ya1 = self.curve_fn(-1, -1, -cx, -self.mid_yoffset, curve_len)
+        self._debug(f'ya1: {ya1} ({len(ya1)})')
+        ya2 = self.curve_fn(cx, self.mid_yoffset, 1, 1, curve_len)
+        self._debug(f'ya2: {ya2} ({len(ya2)})')
+        ym = self._line(-cx, -self.mid_yoffset, cx, self.mid_yoffset, mid_width)
+        self._debug(f'ym: {ym} ({len(ym)})')
+        return np.concatenate((ya1, ym, ya2))
+
+    def _saw_frame(self, t, num_samples):
+        """ single morphing sawtooth frame, morph position t in [0, 1] """
+        if self.a.saw == 'harm':
+            # additive saw: harmonics count grows geometrically with t,
+            # equal fundamental level across frames
+            max_harm = max(1, num_samples // 4)
+            n = int(round(max_harm ** t))
+            self._debug(f'harmonics: {n}')
+            x = np.arange(num_samples) / num_samples
+            k = np.arange(1, n + 1)
+            return (2 / np.pi) * np.sum(
+                np.sin(2 * np.pi * np.outer(k, x)) / k[:, None], axis=0)
+
+        # skew: ramp turnaround moves from first sample (reverse saw)
+        # through the middle (triangle) to last sample (saw)
+        peak = int(round(t * (num_samples - 1)))
+        self._debug(f'skew peak: {peak}')
+        y = np.empty(num_samples)
+        y[:peak + 1] = np.linspace(-1, 1, peak + 1)
+        y[peak:] = np.linspace(1, -1, num_samples - peak)
+        return y
+
+    def _post_process(self, y, num_samples):
+        """ filters and transforms applied to one frame """
+        if self.a.savgol:
+            wlen = int(num_samples / 100 * self.a.savgol[0])
+            y = savgol_filter(y, window_length=wlen, polyorder=self.a.savgol[1])
+        if self.a.gauss:
+            y = gaussian_filter1d(y, sigma=self.a.gauss)
+        if self.a.bitcrush:
+            max_val = 2**(self.a.bitcrush) - 1
+            y = np.round(y * max_val) / max_val
+        if self.a.reverse:
+            y = y[::-1]
+        if self.a.shift:
+            y = np.roll(y, shift=self.a.shift)
+        if self.a.norm:
+            y = y / np.max(np.abs(y)) * self.a.norm
+        return y
+
     def _gen_waveforms(self, num_waveforms, num_samples):
         """ compute wavetable array with shape (num_waveforms, num_samples) """
         wt = np.zeros((num_waveforms, num_samples))
         self._debug(f'wt shape: {wt.shape}')
         if self.a.savgol and self.a.savgol[0] not in range(1, 100):
             raise ValueError('savgol window should be in range 1-100%')
+
+        if self.a.saw:
+            morphs = np.linspace(0, 1, num_waveforms) if num_waveforms > 1 else [1.0]
+            for i in range(num_waveforms):
+                wt[i] = self._post_process(self._saw_frame(morphs[i], num_samples),
+                                           num_samples)
+            return wt
+
         mid_widths = self._mid_widths(num_waveforms, num_samples)
         xoffsets = np.linspace(0, self.a.mid_width_pct / 100, num_waveforms)
-
         for i in range(num_waveforms):
-            cx = xoffsets[i]
-            self._debug(f'cx: {cx}')
-
-            curve_len = num_samples // 2 - mid_widths[i] // 2
-            self._debug(
-                f'i: {i} curve_len: {curve_len}, mw: {mid_widths[i]}, '
-                f'sum: {curve_len*2+mid_widths[i]}')
-
-            ya1 = self.curve_fn(-1, -1, -cx, -self.mid_yoffset, curve_len)
-            self._debug(f'ya1: {ya1} ({len(ya1)})')
-            ya2 = self.curve_fn(cx, self.mid_yoffset, 1, 1, curve_len)
-            self._debug(f'ya2: {ya2} ({len(ya2)})')
-            ym = self._line(-cx, -self.mid_yoffset, cx, self.mid_yoffset, mid_widths[i])
-            self._debug(f'ym: {ym} ({len(ym)})')
-            y = np.concatenate((ya1, ym, ya2))
+            self._debug(f'i: {i} cx: {xoffsets[i]}')
+            y = self._curve_frame(xoffsets[i], mid_widths[i], num_samples)
             self._debug(f'y: {y} {y.shape}')
-            if self.a.savgol:
-                wlen = int(num_samples / 100 * self.a.savgol[0])
-                y = savgol_filter(y, window_length=wlen, polyorder=self.a.savgol[1])
-            if self.a.gauss:
-                y = gaussian_filter1d(y, sigma=self.a.gauss)
-            if self.a.bitcrush:
-                max_val = 2**(self.a.bitcrush) - 1
-                y = np.round(y * max_val) / max_val
-            if self.a.reverse:
-                y = y[::-1]
-            if self.a.shift:
-                y = np.roll(y, shift=self.a.shift)
-            if self.a.norm:
-                y = y / np.max(np.abs(y)) * self.a.norm
-
-            wt[i] = y
+            wt[i] = self._post_process(y, num_samples)
 
         return wt
 

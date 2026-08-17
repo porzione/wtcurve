@@ -81,6 +81,10 @@ def setup_parser():
                                help="Bezier control point float multiplier, best -9.0..4.0")
     waveform_group.add_argument("-L", action='store_true', dest="dline",
                                help="Direct line instead of curve")
+    waveform_group.add_argument("--saw", dest="saw", choices=['harm', 'skew'],
+                                help="Morphing sawtooth: harm morphs sine to saw "
+                                     "by adding harmonics, skew morphs reverse saw "
+                                     "to saw through triangle")
     waveform_group.add_argument("--rev", action='store_true', dest="reverse",
                                 help="Reverse waveform")
     waveform_group.add_argument("--shift", dest="shift", type=int,
