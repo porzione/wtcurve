@@ -316,8 +316,7 @@ class WtCurve:
             if self.a.shift:
                 y = np.roll(y, shift=self.a.shift)
             if self.a.norm:
-                abs_max = np.max(np.abs(y))
-                y = y / abs_max * self.a.norm
+                y = y / np.max(np.abs(y)) * self.a.norm
 
             wt[i] = y
 
