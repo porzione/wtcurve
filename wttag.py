@@ -163,7 +163,8 @@ class Tagger:
                             continue
                         if chid == b'fmt ':
                             print(self._unpack_fmt(data))
-                            data[8:12] = struct.pack('<I', 0)  # zero rate
+                            # zero byte rate, matches u-he factory wavetables
+                            data[8:12] = struct.pack('<I', 0)
                         elif chid == b'data':
                             # write new chunks before data
                             for tag, tval in TAGS.items():
