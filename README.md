@@ -12,11 +12,15 @@ I have tested the 32-bit float WAV wavetables with the Linux versions of [Surge 
 
 ### Morphing sawtooth
 
-The `--saw` option generates a morphing sawtooth instead of the curve waveform (`-m`, `-o` and the curve options are ignored, filters still apply). `--saw harm` builds each frame additively from `1/k` harmonics, with the harmonic count growing geometrically from 1 (pure sine) to samples/4 (band-limited saw, 512 harmonics at default settings); sweeping the wavetable position sounds like opening a low-pass filter. `--saw skew` moves the ramp turnaround point across the cycle, morphing a reverse saw through a triangle into a saw.
+The `--saw` option generates a morphing sawtooth instead of the curve waveform (`-m`, `-o` and the curve options are ignored, filters still apply). `--saw harm` builds each frame additively from `1/k` harmonics, with the harmonic count growing geometrically from 1 (pure sine) to samples/4 (band-limited saw, 512 harmonics at default settings); sweeping the wavetable position sounds like opening a low-pass filter. `--saw skew` moves the ramp turnaround point across the cycle, morphing a reverse saw through a triangle into a saw. `--saw pow` and `--saw rc` morph the curvature of the ramp itself: both start from a perfectly linear saw and bend it more and more towards the last waveform. `pow` raises the normalized ramp to a power growing from 1.0 to 4.0, giving a rounded bottom and a sharp top; `rc` follows the analog capacitor charging curve `1 - e^(-t/RC)` with the rate constant growing from 0 to 8, giving the mirrored shape - sharp bottom, rounded top. Both keep the full -1..1 range in every frame, so the morph changes the harmonic content, not the level.
 
 ![Saw harmonics morph](images/saw_harm_anim.gif "Saw harmonics morph")
 
 ![Saw skew morph](images/saw_skew_anim.gif "Saw skew morph")
+
+![Saw power morph](images/saw_pow_anim.gif "Saw power morph")
+
+![Saw RC morph](images/saw_rc_anim.gif "Saw RC morph")
 
 ### File names
 
@@ -62,8 +66,8 @@ $ wtcurve.py --help
 usage: wtcurve.py [-h] [-D] [-w NUM_WAVEFORMS]
                   [-s {16,32,64,128,256,512,1024,2048,4096}] [--16]
                   [-m MID_WIDTH_PCT] [-o MID_YOFFSET] [-e {2,3,4,5,6,7,8,9}]
-                  [--tanh TANH] [-B BEZIER] [-L] [--saw {harm,skew}] [--rev]
-                  [--shift SHIFT] [--norm NORM] [--savgol SAVGOL]
+                  [--tanh TANH] [-B BEZIER] [-L] [--saw {harm,skew,pow,rc}]
+                  [--rev] [--shift SHIFT] [--norm NORM] [--savgol SAVGOL]
                   [--gauss GAUSS] [--bitcrush BITCRUSH] [--graph] [--graph3d]
                   [--png] [--wav] [--wt] [--h2p] [--gif] [--dpi DPI]
                   [--fontsize FONTSIZE] [-O] [--fullfn]
@@ -83,9 +87,11 @@ Waveform options:
   --tanh TANH           Hyperbolic float tangent, e.g. 4.0
   -B BEZIER             Bezier control point float multiplier, best -9.0..4.0
   -L                    Direct line instead of curve
-  --saw {harm,skew}     Morphing sawtooth: harm morphs sine to saw by adding
+  --saw {harm,skew,pow,rc}
+                        Morphing sawtooth: harm morphs sine to saw by adding
                         harmonics, skew morphs reverse saw to saw through
-                        triangle
+                        triangle, pow and rc morph the ramp curvature from
+                        linear to power-bent or RC capacitor charge shaped
   --rev                 Reverse waveform
   --shift SHIFT         Shift (roll) waveform, int samples
   --norm NORM           Normalize to, float, e.g. 0.8

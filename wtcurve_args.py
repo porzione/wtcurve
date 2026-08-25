@@ -33,6 +33,14 @@ def restricted_float1(n):
     return n
 
 
+# morphing sawtooth modes: flag value -> title word
+SAW_MODES = {
+    'harm': 'harmonics',
+    'skew': 'skew',
+    'pow': 'power',
+    'rc': 'RC',
+}
+
 defaults = {
     "num_waveforms": 256,
     "num_samples": 2048,
@@ -81,10 +89,12 @@ def setup_parser():
                                help="Bezier control point float multiplier, best -9.0..4.0")
     waveform_group.add_argument("-L", action='store_true', dest="dline",
                                help="Direct line instead of curve")
-    waveform_group.add_argument("--saw", dest="saw", choices=['harm', 'skew'],
+    waveform_group.add_argument("--saw", dest="saw", choices=list(SAW_MODES),
                                 help="Morphing sawtooth: harm morphs sine to saw "
                                      "by adding harmonics, skew morphs reverse saw "
-                                     "to saw through triangle")
+                                     "to saw through triangle, pow and rc morph the "
+                                     "ramp curvature from linear to power-bent "
+                                     "or RC capacitor charge shaped")
     waveform_group.add_argument("--rev", action='store_true', dest="reverse",
                                 help="Reverse waveform")
     waveform_group.add_argument("--shift", dest="shift", type=int,

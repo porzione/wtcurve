@@ -11,8 +11,12 @@ from scipy.signal import savgol_filter
 from scipy.ndimage import gaussian_filter1d
 import matplotlib.pyplot as plt
 from matplotlib import animation
-from wtcurve_args import setup_parser
+from wtcurve_args import SAW_MODES, setup_parser
 import wtfile
+
+# curvature at t=1 for the morphing power/RC sawtooths
+MAX_POWER = 4.0
+MAX_RC = 8.0
 
 
 class WtCurve:
@@ -62,10 +66,8 @@ class WtCurve:
     def _prepare_mode(self):
         """ choose the waveform family, its title and file name type """
         if self.a.saw:
-            self.frame_fn = (self._saw_harm_frame if self.a.saw == 'harm'
-                             else self._saw_skew_frame)
-            morph = 'harmonics' if self.a.saw == 'harm' else 'skew'
-            self.title = f'Saw {morph} morph'
+            self.frame_fn = getattr(self, f'_saw_{self.a.saw}_frame')
+            self.title = f'Saw {SAW_MODES[self.a.saw]} morph'
             self.mtype = f'saw_{self.a.saw}'
         elif isinstance(self.a.bezier, (float, int)):
             self.curve_fn = self._bezier_curve
@@ -326,6 +328,29 @@ class WtCurve:
         y[:peak + 1] = np.linspace(-1, 1, peak + 1)
         y[peak:] = np.linspace(1, -1, num_samples - peak)
         return y
+
+    def _saw_pow_frame(self, t, num_samples):
+        """
+        power-curved saw frame: the ramp is bent by a power function,
+        t morphs the exponent from 1 (linear saw) to MAX_POWER
+        (rounded bottom, sharp top)
+        """
+        power = MAX_POWER ** t
+        self._debug(f'power: {power}')
+        ramp = np.linspace(0.0, 1.0, num_samples, endpoint=False)
+        return 2.0 * np.power(ramp, power) - 1.0
+
+    def _saw_rc_frame(self, t, num_samples):
+        """
+        analog RC saw frame: capacitor charging curve 1 - e^(-t/RC),
+        t morphs the rate constant from ~0 (linear saw) to MAX_RC
+        (sharp bottom, rounded top)
+        """
+        rc = max(MAX_RC * t, 1e-6)
+        self._debug(f'rc constant: {rc}')
+        ramp = np.linspace(0.0, 1.0, num_samples, endpoint=False)
+        charge = 1.0 - np.exp(-ramp * rc)
+        return 2.0 * (charge - charge[0]) / (charge[-1] - charge[0]) - 1.0
 
     def _post_process(self, y):
         """ filters and transforms applied to one frame """
