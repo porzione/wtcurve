@@ -329,6 +329,23 @@ class WtCurve:
         y[peak:] = np.linspace(1, -1, num_samples - peak)
         return y
 
+    @staticmethod
+    def _dc_free(y):
+        """
+        centre a frame on zero, keeping the peak it had
+
+        A bent ramp is not symmetric about zero, so it carries an offset that
+        grows with the bend - up to 0.6 of full scale at the far end of the
+        power morph, 0.75 of the RC one. In a wavetable that offset is not
+        harmless: an oscillator sweeping the table steps its output every time
+        it crosses a frame, and the offset eats the headroom that peak
+        normalisation then charges the audible part of the waveform for.
+        """
+        peak = np.abs(y).max()
+        y = y - y.mean()
+        new_peak = np.abs(y).max()
+        return y * (peak / new_peak) if new_peak else y
+
     def _saw_pow_frame(self, t, num_samples):
         """
         power-curved saw frame: the ramp is bent by a power function,
@@ -338,7 +355,7 @@ class WtCurve:
         power = MAX_POWER ** t
         self._debug(f'power: {power}')
         ramp = np.linspace(0.0, 1.0, num_samples, endpoint=False)
-        return 2.0 * np.power(ramp, power) - 1.0
+        return self._dc_free(2.0 * np.power(ramp, power) - 1.0)
 
     def _saw_rc_frame(self, t, num_samples):
         """
@@ -350,7 +367,8 @@ class WtCurve:
         self._debug(f'rc constant: {rc}')
         ramp = np.linspace(0.0, 1.0, num_samples, endpoint=False)
         charge = 1.0 - np.exp(-ramp * rc)
-        return 2.0 * (charge - charge[0]) / (charge[-1] - charge[0]) - 1.0
+        return self._dc_free(
+            2.0 * (charge - charge[0]) / (charge[-1] - charge[0]) - 1.0)
 
     def _post_process(self, y):
         """ filters and transforms applied to one frame """
