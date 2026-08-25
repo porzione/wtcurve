@@ -12,7 +12,9 @@ I have tested the 32-bit float WAV wavetables with the Linux versions of [Surge 
 
 ### Morphing sawtooth
 
-The `--saw` option generates a morphing sawtooth instead of the curve waveform (`-m`, `-o` and the curve options are ignored, filters still apply). `--saw harm` builds each frame additively from `1/k` harmonics, with the harmonic count growing geometrically from 1 (pure sine) to samples/4 (band-limited saw, 512 harmonics at default settings); sweeping the wavetable position sounds like opening a low-pass filter. `--saw skew` moves the ramp turnaround point across the cycle, morphing a reverse saw through a triangle into a saw. `--saw pow` and `--saw rc` morph the curvature of the ramp itself: both start from a perfectly linear saw and bend it more and more towards the last waveform. `pow` raises the normalized ramp to a power growing from 1.0 to 4.0, giving a rounded bottom and a sharp top; `rc` follows the analog capacitor charging curve `1 - e^(-t/RC)` with the rate constant growing from 0 to 8, giving the mirrored shape - sharp bottom, rounded top. Both keep the full -1..1 range in every frame, so the morph changes the harmonic content, not the level.
+The `--saw` option generates a morphing sawtooth instead of the curve waveform (`-m`, `-o` and the curve options are ignored, filters still apply). `--saw harm` builds each frame additively from `1/k` harmonics, with the harmonic count growing geometrically from 1 (pure sine) to samples/4 (band-limited saw, 512 harmonics at default settings); sweeping the wavetable position sounds like opening a low-pass filter. `--saw skew` moves the ramp turnaround point across the cycle, morphing a reverse saw through a triangle into a saw. `--saw pow` and `--saw rc` morph the curvature of the ramp itself: both start from a perfectly linear saw and bend it more and more towards the last waveform. `pow` raises the normalized ramp to a power growing from 1.0 to 4.0, giving a rounded bottom and a sharp top; `rc` follows the analog capacitor charging curve `1 - e^(-t/RC)` with the rate constant growing from 0 to 8, giving the mirrored shape - sharp bottom, rounded top.
+
+Be warned that curvature on its own is close to inaudible as a morph. Bending a ramp leaves the discontinuity where the cycle wraps, that discontinuity is what produces the `1/n` harmonic series, and so the bend only re-weights the lowest harmonics: measured across the whole table the spectral centroid moves 0.03 of an octave for `pow` and 0.10 for `rc`, where `harm` moves it more than six. Raising the exponent does not rescue it - past about 8 the centroid turns back - and a concave ramp has the same spectrum as a convex one, which is why `pow` and `rc` sound like each other. Treat them as waveform shapes rather than sweeps, or give them a second axis with `--morph`, for example `--saw pow --morph harmonics,1,512,log`.
 
 ![Saw harmonics morph](images/saw_harm_anim.gif "Saw harmonics morph")
 
@@ -22,9 +24,25 @@ The `--saw` option generates a morphing sawtooth instead of the curve waveform (
 
 ![Saw RC morph](images/saw_rc_anim.gif "Saw RC morph")
 
+### Morphing any parameter
+
+`--morph NAME,START,END[,lin|log]` sweeps a parameter across the wavetable instead of holding it at one value: `START` in the first waveform, `END` in the last. When the flag that parameter belongs to is also given, and its value falls between the two ends, that value lands in the **middle** waveform, so the table travels from one extreme through the waveform the rest of the command line describes to the other extreme. Without it the sweep is a plain line from start to end. Add `,log` for a geometric sweep, which is what a harmonic count, a filter width or any other ratio-like quantity wants - a linear sweep of `1..512` harmonics spends most of the table above harmonic 250 and sounds like it.
+
+The flag is repeatable, so several parameters can move at once, and it accepts the same names the flags use: `e`, `B`, `tanh`, `m`, `o`, `gauss`, `bitcrush`, `harmonics`, `neg`.
+
+Two of those parameters exist mainly to be morphed:
+
+`--harmonics N` band-limits every waveform to the first `N` harmonics. Applied to a fixed waveform it is a low-pass; swept, it is the brightness axis that curvature morphs lack, and it can be laid over any of them: `--saw pow --harmonics 32 --morph harmonics,1,512,log` keeps the bent shape in every frame while the table opens from a sine to the full saw, with the 32-harmonic version in the middle.
+
+`--neg X` scales the negative half of the waveform, the asymmetry a hardware oscillator has. On a symmetric waveform this manufactures even harmonics out of nothing - a sine at `--neg 0` measures an even-to-odd ratio of 0.64, against 0.00 untouched - so `--tanh 4 --morph neg,1,0.3` travels from a symmetric waveform to a lopsided one. On a sawtooth it does much less, because a saw already carries a full even series. Cutting one half also creates a DC offset, which no wavetable may carry, so the offset is removed and the peak restored afterwards.
+
+![Power morph, band-limited](images/saw_pow_hm32_moharmonics1-512log_anim.gif "Power morph with a harmonic sweep over it")
+
+![Asymmetry morph](images/35m_25h_F4ht_ng0.5_moneg1-0.2_anim.gif "Negative half scaled across the table")
+
 ### File names
 
-Output file names encode the parameters: `90m_25h_5e.wav` means middle part width 90% (`-m`), y-offset 25% (`-o`), exponential curve with exponent 5 (`-e`); `F4ht` is tanh 4.0, `F-7bz` is Bezier -7.0, `dl` is direct line. Filter and transform suffixes: `_sg` savgol, `_ga` gauss, `_bc` bitcrush, `_rev` reverse, `_sh` shift, `_no` normalize. With `--fullfn`, samples and waveforms counts are appended, e.g. `_2048s_256w`.
+Output file names encode the parameters: `90m_25h_5e.wav` means middle part width 90% (`-m`), y-offset 25% (`-o`), exponential curve with exponent 5 (`-e`); `F4ht` is tanh 4.0, `F-7bz` is Bezier -7.0, `dl` is direct line. Filter and transform suffixes: `_sg` savgol, `_ga` gauss, `_bc` bitcrush, `_rev` reverse, `_sh` shift, `_no` normalize, `_hm` harmonics, `_ng` neg. A morphed parameter appends `_mo` with its name and range, e.g. `_moharmonics1-512log`. With `--fullfn`, samples and waveforms counts are appended, e.g. `_2048s_256w`.
 
 ### Visuals
 

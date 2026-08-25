@@ -11,7 +11,7 @@ from scipy.signal import savgol_filter
 from scipy.ndimage import gaussian_filter1d
 import matplotlib.pyplot as plt
 from matplotlib import animation
-from wtcurve_args import SAW_MODES, setup_parser
+from wtcurve_args import MORPHABLE, SAW_MODES, setup_parser
 import wtfile
 
 # curvature at t=1 for the morphing power/RC sawtooths
@@ -34,6 +34,9 @@ class WtCurve:
         self.dbg = self.a.debug
         self.wt = []
         self.saved_files = []
+        self._morph_plan = []
+        self.mid_yoffset = 0.0        # real value in _prepare_values, moves in _apply_morph
+        self._prepare_morph()
         self._prepare_mode()
         self._prepare_suffix()
         self._prepare_values()
@@ -97,6 +100,17 @@ class WtCurve:
         if isinstance(self.a.bitcrush, (float, int)):
             self.title = f'{self.title} bitcrush={self.a.bitcrush}'
             self.suffix = f'{self.suffix}_bc{self.a.bitcrush}'
+        if isinstance(self.a.harmonics, (float, int)):
+            self.title = f'{self.title} harmonics={self.a.harmonics}'
+            self.suffix = f'{self.suffix}_hm{self.a.harmonics}'
+        if isinstance(self.a.neg, (float, int)):
+            self.title = f'{self.title} neg={self.a.neg:.4g}'
+            self.suffix = f'{self.suffix}_ng{self.a.neg:.4g}'
+        for name, start, end, curve in self.morphs:
+            log = ' log' if curve == 'log' else ''
+            self.title = f'{self.title} {name}:{start:.4g}..{end:.4g}{log}'
+            self.suffix = (f'{self.suffix}_mo{name}{start:.4g}-{end:.4g}'
+                           f'{"log" if curve == "log" else ""}')
         if self.a.reverse:
             self.title = f'{self.title} rev'
             self.suffix = f'{self.suffix}_rev'
@@ -106,6 +120,60 @@ class WtCurve:
         if self.a.norm:
             self.title = f'{self.title} norm={self.a.norm:.2g}'
             self.suffix = f'{self.suffix}_no{self.a.norm:.2g}'
+
+    def _prepare_morph(self):
+        """
+        --morph specs, with the anchor each one keeps in the middle waveform
+
+        The value the flag itself carries becomes the middle of the table when
+        it lies between the two ends, so a sweep travels from one extreme
+        through the waveform the command line describes to the other extreme.
+        When it does not (or the flag was never given, as for a filter that is
+        off by default) there is nothing to anchor to and the sweep is a plain
+        line from start to end.
+        """
+        self.morphs = []
+        for name, start, end, curve in (self.a.morph or []):
+            dest, _cast = MORPHABLE[name]
+            base = getattr(self.a, dest, None)
+            if curve == 'log' and base is not None and base <= 0:
+                base = None
+            if base is not None and min(start, end) <= base <= max(start, end):
+                anchor = float(base)
+            else:
+                if base is not None:
+                    print(f'--morph {name}: {base} is outside {start}..{end}, '
+                          f'sweeping straight through instead of anchoring on it')
+                anchor = None
+            self.morphs.append((name, start, end, curve))
+            self._morph_plan.append((dest, start, anchor, end, curve, MORPHABLE[name][1]))
+
+    @staticmethod
+    def _morph_value(start, anchor, end, curve, t):
+        """ value at table position t: start .. anchor (at 0.5) .. end """
+        if curve == 'log':
+            start, end = np.log(start), np.log(end)
+            anchor = None if anchor is None else np.log(anchor)
+        if anchor is None:
+            value = start + (end - start) * t
+        elif t <= 0.5:
+            value = start + (anchor - start) * (t / 0.5)
+        else:
+            value = anchor + (end - anchor) * ((t - 0.5) / 0.5)
+        return np.exp(value) if curve == 'log' else value
+
+    def _apply_morph(self, t):
+        """ set every morphed parameter to what it is at table position t """
+        for dest, start, anchor, end, curve, cast in self._morph_plan:
+            value = self._morph_value(start, anchor, end, curve, t)
+            value = int(round(value)) if cast is int else float(value)
+            setattr(self.a, dest, value)
+            if dest == 'mid_yoffset':
+                self.mid_yoffset = value * 0.01
+        if self._morph_plan:
+            self._debug(f'morphed at t={t:.4f}: '
+                        + ', '.join(f'{d}={getattr(self.a, d)}'
+                                    for d, *_rest in self._morph_plan))
 
     def _prepare_values(self):
         if self.a.saw:
@@ -370,8 +438,32 @@ class WtCurve:
         return self._dc_free(
             2.0 * (charge - charge[0]) / (charge[-1] - charge[0]) - 1.0)
 
+    @staticmethod
+    def _asymmetric(y, neg):
+        """
+        scale the negative half, the asymmetry a hardware oscillator has
+
+        Cutting one half creates even harmonics where a symmetric waveform had
+        none, which is the whole point, and it also creates a DC offset, which
+        no wavetable may carry: an oscillator would step the output every time
+        it crossed a frame. So the offset is removed and the peak the waveform
+        had before is restored.
+        """
+        return WtCurve._dc_free(np.where(y < 0, y * neg, y))
+
+    @staticmethod
+    def _band_limit(y, harmonics):
+        """ keep the first n harmonics, drop the rest """
+        spectrum = np.fft.rfft(y)
+        spectrum[harmonics + 1:] = 0
+        return np.fft.irfft(spectrum, len(y))
+
     def _post_process(self, y):
         """ filters and transforms applied to one frame """
+        if self.a.neg is not None and self.a.neg != 1.0:
+            y = self._asymmetric(y, self.a.neg)
+        if self.a.harmonics and self.a.harmonics > 0:
+            y = self._band_limit(y, self.a.harmonics)
         if self.a.savgol:
             wlen = int(len(y) / 100 * self.a.savgol[0])
             y = savgol_filter(y, window_length=wlen, polyorder=self.a.savgol[1])
@@ -394,8 +486,11 @@ class WtCurve:
             morphs = np.linspace(0, 1, num_waveforms)
         else:
             morphs = np.array([1.0])
-        return np.array([self._post_process(self.frame_fn(t, num_samples))
-                         for t in morphs])
+        frames = []
+        for t in morphs:
+            self._apply_morph(t)
+            frames.append(self._post_process(self.frame_fn(t, num_samples)))
+        return np.array(frames)
 
     def generate(self):
         self.wt = self._gen_waveforms(self.a.num_waveforms, self.a.num_samples)

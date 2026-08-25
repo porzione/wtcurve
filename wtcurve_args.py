@@ -33,6 +33,50 @@ def restricted_float1(n):
     return n
 
 
+# parameters --morph may sweep across the wavetable: name -> (dest, cast)
+# the name is the flag as it is typed on the command line, without dashes, so
+# --morph e,2,9 sweeps the same thing -e sets
+MORPHABLE = {
+    'e':         ('exp', float),
+    'B':         ('bezier', float),
+    'tanh':      ('tanh', float),
+    'm':         ('mid_width_pct', int),
+    'o':         ('mid_yoffset', int),
+    'gauss':     ('gauss', float),
+    'bitcrush':  ('bitcrush', int),
+    'harmonics': ('harmonics', int),
+    'neg':       ('neg', float),
+}
+
+
+def morph_spec(value):
+    """
+    parse a --morph argument: name,start,end[,lin|log]
+    """
+    parts = value.split(',')
+    if len(parts) not in (3, 4):
+        raise ArgumentTypeError(
+            f"--morph takes name,start,end[,lin|log] (e.g. harmonics,1,512,log), "
+            f"got '{value}'")
+    name = parts[0].strip()
+    if name not in MORPHABLE:
+        raise ArgumentTypeError(
+            f"'{name}' is not morphable; choose from: {', '.join(MORPHABLE)}")
+    try:
+        start, end = float(parts[1]), float(parts[2])
+    except ValueError as exc:
+        raise ArgumentTypeError(f"--morph {name}: start and end must be numbers") from exc
+    if start == end:
+        raise ArgumentTypeError(f"--morph {name}: start and end are the same value")
+    curve = parts[3].strip() if len(parts) == 4 else 'lin'
+    if curve not in ('lin', 'log'):
+        raise ArgumentTypeError(f"--morph {name}: curve is lin or log, not '{curve}'")
+    if curve == 'log' and (start <= 0 or end <= 0):
+        raise ArgumentTypeError(
+            f"--morph {name}: a log sweep needs both ends above zero")
+    return (name, start, end, curve)
+
+
 # morphing sawtooth modes: flag value -> title word
 SAW_MODES = {
     'harm': 'harmonics',
@@ -95,6 +139,21 @@ def setup_parser():
                                      "to saw through triangle, pow and rc morph the "
                                      "ramp curvature from linear to power-bent "
                                      "or RC capacitor charge shaped")
+    waveform_group.add_argument("--harmonics", dest="harmonics", type=int,
+                                help="Band-limit every waveform to this many harmonics, "
+                                     "e.g. 32; morphable")
+    waveform_group.add_argument("--neg", dest="neg", type=float,
+                                help="Scale the negative half of the waveform, e.g. 0.5 "
+                                     "for the asymmetry of a hardware oscillator; DC is "
+                                     "removed and the peak restored afterwards; morphable")
+    waveform_group.add_argument("--morph", dest="morph", type=morph_spec, action='append',
+                                metavar="NAME,START,END[,lin|log]",
+                                help="Sweep a parameter across the wavetable: START in the "
+                                     "first waveform, END in the last, and the value the "
+                                     "flag itself carries in the middle one. Add ,log for "
+                                     "a geometric sweep, which is what a harmonic count or "
+                                     "any other ratio-like quantity wants. Repeatable. "
+                                     f"Morphable: {', '.join(MORPHABLE)}")
     waveform_group.add_argument("--rev", action='store_true', dest="reverse",
                                 help="Reverse waveform")
     waveform_group.add_argument("--shift", dest="shift", type=int,
