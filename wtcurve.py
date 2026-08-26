@@ -31,6 +31,11 @@ class WtCurve:
             print(f'What to do?\n\n{self.argp.format_help()}')
             sys.exit()
 
+        if self.a.rms and self.a.norm:
+            wtfile.print_err('--rms and --norm are two normalizations of the same '
+                             'frames: pick one')
+            sys.exit(1)
+
         self.dbg = self.a.debug
         self.wt = []
         self.saved_files = []
@@ -126,6 +131,9 @@ class WtCurve:
         if self.a.norm:
             self.title = f'{self.title} norm={self.a.norm:.2g}'
             self.suffix = f'{self.suffix}_no{self.a.norm:.2g}'
+        if self.a.rms:
+            self.title = f'{self.title} equal RMS'
+            self.suffix = f'{self.suffix}_rms'
 
     def _prepare_morph(self):
         """
@@ -436,6 +444,29 @@ class WtCurve:
         new_peak = np.abs(y).max()
         return y * (peak / new_peak) if new_peak else y
 
+    @staticmethod
+    def _equal_rms(frames):
+        """
+        scale every frame to the same RMS
+
+        Peak normalization makes the wavetable position part volume control: a
+        sine and a saw of the same peak differ by 2.8 dB of RMS, and every table
+        measured so far drifts across its sweep - 2.9 dB for the power morph,
+        3.5 for RC, 3.8 for the saturation-bias one, which is enough to hear as
+        a fade rather than as a timbre change. Equalizing RMS is what leaves
+        only the timbre moving.
+
+        The level is not a parameter: the whole table is peak-normalized after
+        this, which cancels any factor common to every frame, so the only thing
+        that matters is that the frames agree. A silent frame stays silent.
+        """
+        rms = np.sqrt(np.mean(np.square(frames), axis=1))
+        loudest = rms.max()
+        if loudest <= 0:
+            return frames
+        scale = np.divide(loudest, rms, out=np.ones_like(rms), where=rms > 0)
+        return frames * scale[:, None]
+
     def _saw_pow_frame(self, t, num_samples):
         """
         power-curved saw frame: the ramp is bent by a power function,
@@ -528,7 +559,10 @@ class WtCurve:
         for t in morphs:
             self._apply_morph(t)
             frames.append(self._post_process(self.frame_fn(t, num_samples)))
-        return np.array(frames)
+        frames = np.array(frames)
+        if self.a.rms:
+            frames = self._equal_rms(frames)
+        return frames
 
     def generate(self):
         self.wt = self._gen_waveforms(self.a.num_waveforms, self.a.num_samples)

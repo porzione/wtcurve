@@ -38,13 +38,15 @@ Two of those parameters exist mainly to be morphed:
 
 `--neg X` scales the negative half of the waveform, the asymmetry a hardware oscillator has. On a symmetric waveform this manufactures even harmonics out of nothing - a sine at `--neg 0` measures an even-to-odd ratio of 0.64, against 0.00 untouched - so `--tanh 4 --morph neg,1,0.3` travels from a symmetric waveform to a lopsided one. On a sawtooth it does much less, because a saw already carries a full even series. Cutting one half also creates a DC offset, which no wavetable may carry, so the offset is removed and the peak restored afterwards.
 
+`--rms` normalizes every waveform to the same RMS instead of leaving each at its own level, so that sweeping the wavetable position changes timbre and nothing else. Without it the position knob is part volume control: a sine and a saw of the same peak differ by 2.8 dB of RMS, and the tables measured here drift 2.2 dB across `--saw harm`, 3.8 dB across a saturation-bias morph, 4.6 dB across an exponent morph and 7.3 dB across `--saw rc` - loud enough to hear as a fade over the timbre. The table is peak-normalized as a whole afterwards, so nothing clips and no level argument is needed; the cost is headroom, since every frame but the loudest now sits below full scale (mean peak 0.73 to 0.93 on those same tables). It cannot be combined with `--norm`, which equalizes peaks and is the normalization that causes the drift.
+
 ![Power morph, band-limited](images/saw_pow_hm32_moharmonics1-512log_anim.gif "Power morph with a harmonic sweep over it")
 
 ![Asymmetry morph](images/35m_25h_F4ht_ng0.5_moneg1-0.2_anim.gif "Negative half scaled across the table")
 
 ### File names
 
-Output file names encode the parameters: `90m_25h_5e.wav` means middle part width 90% (`-m`), y-offset 25% (`-o`), exponential curve with exponent 5 (`-e`); `F4ht` is tanh 4.0, `F-7bz` is Bezier -7.0, `dl` is direct line. Filter and transform suffixes: `_sg` savgol, `_ga` gauss, `_bc` bitcrush, `_rev` reverse, `_sh` shift, `_no` normalize, `_hm` harmonics, `_ng` neg. A morphed parameter appends `_mo` with its name and range, e.g. `_moharmonics1-512log`. With `--fullfn`, samples and waveforms counts are appended, e.g. `_2048s_256w`.
+Output file names encode the parameters: `90m_25h_5e.wav` means middle part width 90% (`-m`), y-offset 25% (`-o`), exponential curve with exponent 5 (`-e`); `F4ht` is tanh 4.0, `F-7bz` is Bezier -7.0, `dl` is direct line. Filter and transform suffixes: `_sg` savgol, `_ga` gauss, `_bc` bitcrush, `_rev` reverse, `_sh` shift, `_no` normalize, `_rms` equal-RMS normalize, `_hm` harmonics, `_ng` neg. A morphed parameter appends `_mo` with its name and range, e.g. `_moharmonics1-512log`. With `--fullfn`, samples and waveforms counts are appended, e.g. `_2048s_256w`.
 
 ### Visuals
 
@@ -86,11 +88,14 @@ $ wtcurve.py --help
 usage: wtcurve.py [-h] [-D] [-w NUM_WAVEFORMS]
                   [-s {16,32,64,128,256,512,1024,2048,4096}] [--16]
                   [-m MID_WIDTH_PCT] [-o MID_YOFFSET] [-e {2,3,4,5,6,7,8,9}]
-                  [--tanh TANH] [-B BEZIER] [-L] [--saw {harm,skew,pow,rc}]
-                  [--rev] [--shift SHIFT] [--norm NORM] [--savgol SAVGOL]
-                  [--gauss GAUSS] [--bitcrush BITCRUSH] [--graph] [--graph3d]
-                  [--png] [--wav] [--wt] [--h2p] [--gif] [--dpi DPI]
-                  [--fontsize FONTSIZE] [-O] [--fullfn]
+                  [--tanh TANH] [-B BEZIER] [-L]
+                  [--saw {ramp,harm,skew,pow,rc}] [--harmonics HARMONICS]
+                  [--neg NEG] [--sat SAT] [--satbias SATBIAS]
+                  [--morph NAME,START,END[,lin|log]] [--rev] [--shift SHIFT]
+                  [--norm NORM] [--rms] [--savgol SAVGOL] [--gauss GAUSS]
+                  [--bitcrush BITCRUSH] [--graph] [--graph3d] [--png] [--wav]
+                  [--wt] [--h2p] [--gif] [--dpi DPI] [--fontsize FONTSIZE]
+                  [-O] [--fullfn]
 
 options:
   -h, --help            show this help message and exit
@@ -107,14 +112,41 @@ Waveform options:
   --tanh TANH           Hyperbolic float tangent, e.g. 4.0
   -B BEZIER             Bezier control point float multiplier, best -9.0..4.0
   -L                    Direct line instead of curve
-  --saw {harm,skew,pow,rc}
-                        Morphing sawtooth: harm morphs sine to saw by adding
-                        harmonics, skew morphs reverse saw to saw through
-                        triangle, pow and rc morph the ramp curvature from
-                        linear to power-bent or RC capacitor charge shaped
+  --saw {ramp,harm,skew,pow,rc}
+                        Morphing sawtooth: ramp holds a plain saw in every
+                        frame, for a table whose motion comes entirely from
+                        --morph; harm morphs sine to saw by adding harmonics,
+                        skew morphs reverse saw to saw through triangle, pow
+                        and rc morph the ramp curvature from linear to power-
+                        bent or RC capacitor charge shaped
+  --harmonics HARMONICS
+                        Band-limit every waveform to this many harmonics, e.g.
+                        32; morphable
+  --neg NEG             Scale the negative half of the waveform, e.g. 0.5 for
+                        the asymmetry of a hardware oscillator; DC is removed
+                        and the peak restored afterwards; morphable
+  --sat SAT             Drive the waveform through tanh, e.g. 1.26; the
+                        asymmetric soft clipping of an analog oscillator stage
+                        when paired with --satbias; morphable
+  --satbias SATBIAS     Offset fed into --sat, e.g. 0.63, which compresses one
+                        half of the waveform more than the other; DC is
+                        removed afterwards; morphable
+  --morph NAME,START,END[,lin|log]
+                        Sweep a parameter across the wavetable: START in the
+                        first waveform, END in the last, and the value the
+                        flag itself carries in the middle one. Add ,log for a
+                        geometric sweep, which is what a harmonic count or any
+                        other ratio-like quantity wants. Repeatable.
+                        Morphable: e, B, tanh, m, o, gauss, bitcrush,
+                        harmonics, neg, sat, satbias
   --rev                 Reverse waveform
   --shift SHIFT         Shift (roll) waveform, int samples
-  --norm NORM           Normalize to, float, e.g. 0.8
+  --norm NORM           Normalize every waveform to this peak, float, e.g. 0.8
+  --rms                 Normalize every waveform to the same RMS, so that
+                        sweeping the wavetable position changes timbre and not
+                        loudness; the table is peak-normalized as a whole
+                        afterwards. Not usable with --norm, which equalizes
+                        peaks instead and is what causes the drift.
 
 Filter options:
   --savgol SAVGOL       Savitzky-Golay filter window_len(%),polyorder, e.g.

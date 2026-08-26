@@ -172,7 +172,14 @@ def setup_parser():
     waveform_group.add_argument("--shift", dest="shift", type=int,
                                 help="Shift (roll) waveform, int samples")
     waveform_group.add_argument("--norm", dest="norm", type=restricted_float1,
-                                help="Normalize to, float, e.g. 0.8")
+                                help="Normalize every waveform to this peak, float, e.g. 0.8")
+    waveform_group.add_argument("--rms", action='store_true', dest="rms",
+                                help="Normalize every waveform to the same RMS, so that "
+                                     "sweeping the wavetable position changes timbre and "
+                                     "not loudness; the table is peak-normalized as a "
+                                     "whole afterwards. Not usable with --norm, which "
+                                     "equalizes peaks instead and is what causes the "
+                                     "drift.")
 
     # Filter options
     filter_group = argp.add_argument_group("Filter options")
