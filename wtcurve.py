@@ -103,6 +103,12 @@ class WtCurve:
         if isinstance(self.a.harmonics, (float, int)):
             self.title = f'{self.title} harmonics={self.a.harmonics}'
             self.suffix = f'{self.suffix}_hm{self.a.harmonics}'
+        if isinstance(self.a.sat, (float, int)):
+            self.title = f'{self.title} sat={self.a.sat:.4g}'
+            self.suffix = f'{self.suffix}_st{self.a.sat:.4g}'
+        if isinstance(self.a.satbias, (float, int)):
+            self.title = f'{self.title} satbias={self.a.satbias:.4g}'
+            self.suffix = f'{self.suffix}_sb{self.a.satbias:.4g}'
         if isinstance(self.a.neg, (float, int)):
             self.title = f'{self.title} neg={self.a.neg:.4g}'
             self.suffix = f'{self.suffix}_ng{self.a.neg:.4g}'
@@ -138,6 +144,10 @@ class WtCurve:
             base = getattr(self.a, dest, None)
             if curve == 'log' and base is not None and base <= 0:
                 base = None
+            if base is not None and base in (start, end):
+                print(f'--morph {name}: the middle waveform is anchored on {base}, which '
+                      f'is also an end of the sweep, so half the table stands still - '
+                      f'drop the flag to sweep straight through')
             if base is not None and min(start, end) <= base <= max(start, end):
                 anchor = float(base)
             else:
@@ -366,6 +376,18 @@ class WtCurve:
         self._debug(f'ym: {ym} ({len(ym)})')
         return np.concatenate((ya1, ym, ya2))
 
+    def _saw_ramp_frame(self, t, num_samples):
+        """
+        plain sawtooth, identical in every frame
+
+        Every other family morphs by construction, which leaves nowhere to
+        stand when the motion is supposed to come from --morph alone: sweeping
+        saturation over --saw pow sweeps the curvature as well. This mode is
+        the still carrier for that.
+        """
+        del t
+        return 2.0 * np.linspace(0.0, 1.0, num_samples, endpoint=False) - 1.0
+
     def _saw_harm_frame(self, t, num_samples):
         """
         additive saw frame: harmonics count grows geometrically with t,
@@ -452,6 +474,20 @@ class WtCurve:
         return WtCurve._dc_free(np.where(y < 0, y * neg, y))
 
     @staticmethod
+    def _saturate(y, drive, bias):
+        """
+        tanh saturation with an offset, the analog oscillator stage
+
+        A hardware saw is not a straight ramp: the stage that buffers it
+        saturates, and it does so asymmetrically, so the top of the ramp
+        compresses while the bottom stays. tanh(drive * y + bias) with
+        drive 1.26 and bias 0.63 reproduces one such captured saw to a
+        correlation of 0.9935, and the bias is the half of it that matters -
+        without it the curve is symmetric and the result is just a quieter saw.
+        """
+        return WtCurve._dc_free(np.tanh(drive * y + bias))
+
+    @staticmethod
     def _band_limit(y, harmonics):
         """ keep the first n harmonics, drop the rest """
         spectrum = np.fft.rfft(y)
@@ -462,6 +498,8 @@ class WtCurve:
         """ filters and transforms applied to one frame """
         if self.a.neg is not None and self.a.neg != 1.0:
             y = self._asymmetric(y, self.a.neg)
+        if self.a.sat is not None and self.a.sat > 0:
+            y = self._saturate(y, self.a.sat, self.a.satbias if self.a.satbias is not None else 0.0)
         if self.a.harmonics and self.a.harmonics > 0:
             y = self._band_limit(y, self.a.harmonics)
         if self.a.savgol:

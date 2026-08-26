@@ -46,6 +46,8 @@ MORPHABLE = {
     'bitcrush':  ('bitcrush', int),
     'harmonics': ('harmonics', int),
     'neg':       ('neg', float),
+    'sat':       ('sat', float),
+    'satbias':   ('satbias', float),
 }
 
 
@@ -79,6 +81,7 @@ def morph_spec(value):
 
 # morphing sawtooth modes: flag value -> title word
 SAW_MODES = {
+    'ramp': 'plain ramp',
     'harm': 'harmonics',
     'skew': 'skew',
     'pow': 'power',
@@ -134,7 +137,9 @@ def setup_parser():
     waveform_group.add_argument("-L", action='store_true', dest="dline",
                                help="Direct line instead of curve")
     waveform_group.add_argument("--saw", dest="saw", choices=list(SAW_MODES),
-                                help="Morphing sawtooth: harm morphs sine to saw "
+                                help="Morphing sawtooth: ramp holds a plain saw in "
+                                     "every frame, for a table whose motion comes "
+                                     "entirely from --morph; harm morphs sine to saw "
                                      "by adding harmonics, skew morphs reverse saw "
                                      "to saw through triangle, pow and rc morph the "
                                      "ramp curvature from linear to power-bent "
@@ -146,6 +151,14 @@ def setup_parser():
                                 help="Scale the negative half of the waveform, e.g. 0.5 "
                                      "for the asymmetry of a hardware oscillator; DC is "
                                      "removed and the peak restored afterwards; morphable")
+    waveform_group.add_argument("--sat", dest="sat", type=float,
+                                help="Drive the waveform through tanh, e.g. 1.26; the "
+                                     "asymmetric soft clipping of an analog oscillator "
+                                     "stage when paired with --satbias; morphable")
+    waveform_group.add_argument("--satbias", dest="satbias", type=float,
+                                help="Offset fed into --sat, e.g. 0.63, which compresses "
+                                     "one half of the waveform more than the other; DC is "
+                                     "removed afterwards; morphable")
     waveform_group.add_argument("--morph", dest="morph", type=morph_spec, action='append',
                                 metavar="NAME,START,END[,lin|log]",
                                 help="Sweep a parameter across the wavetable: START in the "
