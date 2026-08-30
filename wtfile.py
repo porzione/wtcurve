@@ -98,9 +98,10 @@ class Wt:
             header[:4]   = b'vawt'
             header[4:8]  = struct.pack('<I', self.num_samples)
             header[8:10] = struct.pack('<H', self.num_waveforms)
-            # 0x04 int16/float32 2/4 bytes, int16 if 1
-            bits = 0 if self.bitwidth == 32 else 4
-            header[10:12] = bytes([bits, 0])
+            # flags: 0x04 data is int16, 0x08 the int16 uses the full range;
+            # without 0x08 Surge assumes 15-bit data and doubles the level
+            flags = 0 if self.bitwidth == 32 else 0x0C
+            header[10:12] = struct.pack('<H', flags)
             file.write(header)
 
             normalized = self._normalized()
@@ -121,12 +122,14 @@ class Wt:
             print_err(f'File "{fn}" exists')
             return
 
+        wf = self._normalized()
+
         with open(fn, "w", encoding="utf-8") as file:
             print(H2P_HEADER % self.num_samples, file=file)
 
-            for tn, i in enumerate(range(0, len(self.wf), self.num_samples), start=1):
+            for tn, i in enumerate(range(0, len(wf), self.num_samples), start=1):
                 print(f'//table {tn}', file=file)
-                wave_values = [f*H2P_FMULT for f in self.wf[i:(i+self.num_samples)]]
+                wave_values = [f*H2P_FMULT for f in wf[i:(i+self.num_samples)]]
                 for k, f in enumerate(wave_values):
                     print(f'Wave[{k}] = {f:.10f};', file=file)
                 print(f'Selected.WaveTable.set({tn}, Wave);\n', file=file)

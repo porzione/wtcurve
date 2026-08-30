@@ -217,6 +217,10 @@ class WtCurve:
     def _exp_curve(self, x1, y1, x2, y2, num_points):
         """ exponential curve with fixed start and end """
         self._debug(f'curve: {x1} {y1} {x2} {y2} {num_points}')
+        if abs(self.a.exp) < 1e-6:
+            # the exp->0 limit is a straight line; --morph e can cross zero,
+            # where the formula below divides by zero
+            return self._line(x1, y1, x2, y2, num_points)
         x = np.linspace(x1, x2, num_points)
         y = y1 + (y2 - y1) * (np.exp(self.a.exp * (x - x1)) - 1) / \
             (np.exp(self.a.exp * (x2 - x1)) - 1)
@@ -245,6 +249,10 @@ class WtCurve:
         return y_values
 
     def _tanh_curve(self, x1, y1, x2, y2, num_points):
+        if abs(self.a.tanh) < 1e-6:
+            # the tanh->0 limit is a straight line; --morph tanh can cross
+            # zero, where the scale below divides by zero
+            return self._line(x1, y1, x2, y2, num_points)
         x = np.linspace(x1, x2, num_points)
         scale = (y2 - y1) / (np.tanh(x2 * self.a.tanh) - np.tanh(x1 * self.a.tanh))
         translation = y1 - scale * np.tanh(x1 * self.a.tanh)
@@ -364,6 +372,7 @@ class WtCurve:
         # so other outputs keep their own size
         wt = wtfile.Wt(self._gen_waveforms(wtfile.H2P_NUM_WAVEFORMS,
                                            wtfile.H2P_NUM_SAMPLES))
+        wt.set_normalize(not self.a.norm)
         wt.save_h2p(fn)
 
     def _curve_frame(self, t, num_samples):
@@ -531,8 +540,10 @@ class WtCurve:
             y = self._asymmetric(y, self.a.neg)
         if self.a.sat is not None and self.a.sat > 0:
             y = self._saturate(y, self.a.sat, self.a.satbias if self.a.satbias is not None else 0.0)
-        if self.a.harmonics and self.a.harmonics > 0:
-            y = self._band_limit(y, self.a.harmonics)
+        if self.a.harmonics is not None:
+            # 0, reachable when --morph sweeps down to it, keeps DC only;
+            # skipping the band-limit there would leave the frame full-bright
+            y = self._band_limit(y, max(self.a.harmonics, 0))
         if self.a.savgol:
             wlen = int(len(y) / 100 * self.a.savgol[0])
             y = savgol_filter(y, window_length=wlen, polyorder=self.a.savgol[1])
