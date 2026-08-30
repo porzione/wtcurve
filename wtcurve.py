@@ -408,7 +408,8 @@ class WtCurve:
     def _saw_harm_frame(self, t, num_samples):
         """
         additive saw frame: harmonics count grows geometrically with t,
-        equal fundamental level across frames
+        equal fundamental level across frames; the sum of sin(kx)/k is the
+        descending saw, so it is negated to ascend like the other saw modes
         """
         csum = self._harm_csums.get(num_samples)
         if csum is None:
@@ -422,7 +423,7 @@ class WtCurve:
             self._harm_csums[num_samples] = csum
         n = int(round(len(csum) ** t))
         self._debug(f'harmonics: {n}')
-        return (2 / np.pi) * csum[n - 1]
+        return (-2 / np.pi) * csum[n - 1]
 
     def _saw_skew_frame(self, t, num_samples):
         """
