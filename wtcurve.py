@@ -77,6 +77,10 @@ class WtCurve:
             self.frame_fn = getattr(self, f'_saw_{self.a.saw}_frame')
             self.title = f'Saw {SAW_MODES[self.a.saw]} morph'
             self.mtype = f'saw_{self.a.saw}'
+        elif self.a.sine:
+            self.frame_fn = self._sine_frame
+            self.title = 'Sine'
+            self.mtype = 'sine'
         elif isinstance(self.a.bezier, (float, int)):
             self.curve_fn = self._bezier_curve
             self.title = f'Bézier {self.a.bezier}'
@@ -99,24 +103,16 @@ class WtCurve:
         if isinstance(self.a.savgol, tuple):
             self.title = f'{self.title} savgol={self.a.savgol}'
             self.suffix = f'{self.suffix}_sg{self.a.savgol[0]}-{self.a.savgol[1]}'
-        if isinstance(self.a.gauss, (float, int)):
-            self.title = f'{self.title} gauss={self.a.gauss}'
-            self.suffix = f'{self.suffix}_ga{self.a.gauss}'
-        if isinstance(self.a.bitcrush, (float, int)):
-            self.title = f'{self.title} bitcrush={self.a.bitcrush}'
-            self.suffix = f'{self.suffix}_bc{self.a.bitcrush}'
-        if isinstance(self.a.harmonics, (float, int)):
-            self.title = f'{self.title} harmonics={self.a.harmonics}'
-            self.suffix = f'{self.suffix}_hm{self.a.harmonics}'
-        if isinstance(self.a.sat, (float, int)):
-            self.title = f'{self.title} sat={self.a.sat:.4g}'
-            self.suffix = f'{self.suffix}_st{self.a.sat:.4g}'
-        if isinstance(self.a.satbias, (float, int)):
-            self.title = f'{self.title} satbias={self.a.satbias:.4g}'
-            self.suffix = f'{self.suffix}_sb{self.a.satbias:.4g}'
-        if isinstance(self.a.neg, (float, int)):
-            self.title = f'{self.title} neg={self.a.neg:.4g}'
-            self.suffix = f'{self.suffix}_ng{self.a.neg:.4g}'
+        # numeric transforms: (flag, suffix tag, format); ints keep their
+        # plain str() form so existing file names stay stable
+        for name, tag, fmt in (('gauss', 'ga', ''), ('bitcrush', 'bc', ''),
+                               ('harmonics', 'hm', ''), ('fold', 'fd', '.4g'),
+                               ('foldbias', 'fb', '.4g'), ('sat', 'st', '.4g'),
+                               ('satbias', 'sb', '.4g'), ('neg', 'ng', '.4g')):
+            value = getattr(self.a, name)
+            if isinstance(value, (float, int)):
+                self.title = f'{self.title} {name}={value:{fmt}}'
+                self.suffix = f'{self.suffix}_{tag}{value:{fmt}}'
         for name, start, end, curve in self.morphs:
             log = ' log' if curve == 'log' else ''
             self.title = f'{self.title} {name}:{start:.4g}..{end:.4g}{log}'
@@ -194,7 +190,7 @@ class WtCurve:
                                     for d, *_rest in self._morph_plan))
 
     def _prepare_values(self):
-        if self.a.saw:
+        if self.a.saw or self.a.sine:
             self.fname_prefix = ''
         else:
             self.frame_fn = self._curve_frame
@@ -420,6 +416,17 @@ class WtCurve:
         del t
         return 2.0 * np.linspace(0.0, 1.0, num_samples, endpoint=False) - 1.0
 
+    def _sine_frame(self, t, num_samples):
+        """
+        pure sine, identical in every frame
+
+        The second still carrier next to --saw ramp: a wavefolder or any
+        other --morph-driven transform wants a clean starting point, and
+        for the fold that point is a sine.
+        """
+        del t
+        return np.sin(2 * np.pi * np.arange(num_samples) / num_samples)
+
     def _saw_harm_frame(self, t, num_samples):
         """
         additive saw frame: harmonics count grows geometrically with t,
@@ -530,6 +537,21 @@ class WtCurve:
         return WtCurve._dc_free(np.where(y < 0, y * neg, y))
 
     @staticmethod
+    def _fold(y, gain, bias):
+        """
+        triangle wavefolder, the west coast timbre control
+
+        gain * y + bias runs out of [-1, 1] and is reflected back at every
+        edge it crosses, the Buchla way: harmonics pour in as the folds
+        multiply, non-monotonically - partials rise and fall as each fold
+        passes through. The bias breaks the fold symmetry, which is where
+        the even harmonics come from, and also puts DC on the result, so
+        it is re-centred afterwards.
+        """
+        return WtCurve._dc_free(
+            np.abs(np.mod(gain * y + bias - 1.0, 4.0) - 2.0) - 1.0)
+
+    @staticmethod
     def _saturate(y, drive, bias):
         """
         tanh saturation with an offset, the analog oscillator stage
@@ -552,6 +574,9 @@ class WtCurve:
 
     def _post_process(self, y):
         """ filters and transforms applied to one frame """
+        if self.a.fold is not None and self.a.fold > 0:
+            y = self._fold(y, self.a.fold,
+                           self.a.foldbias if self.a.foldbias is not None else 0.0)
         if self.a.neg is not None and self.a.neg != 1.0:
             y = self._asymmetric(y, self.a.neg)
         if self.a.sat is not None and self.a.sat > 0:

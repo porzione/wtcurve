@@ -4,14 +4,16 @@ Waveform families and transforms worth adding. The bar: a shape earns a place
 only if the wavetable position axis does something musical with it. Ordered by
 payoff for effort.
 
-## In progress
+## Done
 
 - **`--fold GAIN` / `--foldbias BIAS`** - triangle wavefolder, the west coast
   timbre control. A sine driven into the fold at growing gain adds harmonics
   the characteristic non-monotonic way (partials rise and fall as folds pass
   through); the bias breaks the symmetry and manufactures even harmonics,
-  same pattern as `--sat`/`--satbias`. Needs a still sine carrier (`--sine`),
-  which is independently useful under `--neg`, `--sat` and `--harmonics`.
+  same pattern as `--sat`/`--satbias`. Shipped with the still sine carrier
+  `--sine`, which is independently useful under `--neg`, `--sat` and
+  `--harmonics`. Measured: `--sine --fold 3 --morph fold,1,6` moves the
+  centroid 4.2 octaves; bias 0.5 at fold 3 takes even-to-odd from 0 to 0.73.
 
 ## Next
 

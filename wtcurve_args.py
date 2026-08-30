@@ -48,6 +48,8 @@ MORPHABLE = {
     'neg':       ('neg', float),
     'sat':       ('sat', float),
     'satbias':   ('satbias', float),
+    'fold':      ('fold', float),
+    'foldbias':  ('foldbias', float),
 }
 
 
@@ -145,6 +147,19 @@ def setup_parser():
                                      "to saw through triangle, pow and rc morph the "
                                      "ramp curvature from linear to power-bent "
                                      "or RC capacitor charge shaped")
+    waveform_group.add_argument("--sine", action='store_true', dest="sine",
+                                help="Sine in every frame, a still carrier like "
+                                     "--saw ramp whose motion comes from --morph "
+                                     "alone; the carrier a wavefolder wants")
+    waveform_group.add_argument("--fold", dest="fold", type=float,
+                                help="Triangle-wavefold the waveform at this gain, "
+                                     "e.g. 3; sweeping it is the west coast timbre "
+                                     "morph; zero or less disables it, mid-morph "
+                                     "frames included; morphable")
+    waveform_group.add_argument("--foldbias", dest="foldbias", type=float,
+                                help="Offset fed into --fold, e.g. 0.5, which breaks "
+                                     "the fold symmetry and adds even harmonics; DC "
+                                     "is removed afterwards; morphable")
     waveform_group.add_argument("--harmonics", dest="harmonics", type=int,
                                 help="Band-limit every waveform to this many harmonics, "
                                      "e.g. 32; morphable")
