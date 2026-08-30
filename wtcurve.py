@@ -18,6 +18,23 @@ import wtfile
 MAX_POWER = 4.0
 MAX_RC = 8.0
 
+# tenor vowel formants, five per vowel, from the CSound manual appendix:
+# (center Hz, level dB, bandwidth Hz), the bandwidth used as Gaussian sigma
+VOWEL_FORMANTS = {
+    'a': ((650, 0, 80), (1080, -6, 90), (2650, -7, 120), (2900, -8, 130),
+          (3250, -22, 140)),
+    'e': ((400, 0, 70), (1700, -14, 80), (2600, -12, 100), (3200, -14, 120),
+          (3580, -20, 120)),
+    'i': ((290, 0, 40), (1870, -15, 90), (2800, -18, 100), (3250, -20, 120),
+          (3540, -30, 120)),
+    'o': ((400, 0, 70), (800, -10, 80), (2600, -12, 100), (2800, -12, 130),
+          (3000, -26, 135)),
+    'u': ((350, 0, 40), (600, -20, 60), (2700, -17, 100), (2900, -14, 120),
+          (3300, -26, 120)),
+}
+VOWEL_F0 = 110.0    # reference fundamental the formants are mapped against
+VOWEL_FLOOR = 0.01  # -40 dB source floor under the formant bumps
+
 
 class WtCurve:
     """ wavetable curve: compute data, save files """
@@ -77,6 +94,11 @@ class WtCurve:
             self.frame_fn = getattr(self, f'_saw_{self.a.saw}_frame')
             self.title = f'Saw {SAW_MODES[self.a.saw]} morph'
             self.mtype = f'saw_{self.a.saw}'
+        elif self.a.vowel:
+            self.frame_fn = self._vowel_frame
+            morph = ' morph' if len(self.a.vowel) > 1 else ''
+            self.title = f'Vowel {self.a.vowel}{morph}'
+            self.mtype = f'vowel_{self.a.vowel}'
         elif self.a.sine:
             self.frame_fn = self._sine_frame
             self.title = 'Sine'
@@ -190,7 +212,7 @@ class WtCurve:
                                     for d, *_rest in self._morph_plan))
 
     def _prepare_values(self):
-        if self.a.saw or self.a.sine:
+        if self.a.saw or self.a.sine or self.a.vowel:
             self.fname_prefix = ''
         else:
             self.frame_fn = self._curve_frame
@@ -426,6 +448,42 @@ class WtCurve:
         """
         del t
         return np.sin(2 * np.pi * np.arange(num_samples) / num_samples)
+
+    def _vowel_frame(self, t, num_samples):
+        """
+        vowel formant frame: a 1/k source shaped by five Gaussian formant
+        bumps, interpolated across the --vowel sequence as t moves
+
+        Formants are absolute frequencies and a wavetable has none, so
+        they are mapped onto harmonics of VOWEL_F0; played near that
+        pitch the vowels sit where a tenor puts them, higher and every
+        formant scales up with the pitch, which reads as a shrinking
+        head. The floor keeps a trace of the source under vowels whose
+        first formant sits far above the fundamental.
+        """
+        seq = self.a.vowel
+        if len(seq) == 1:
+            fmt = np.array(VOWEL_FORMANTS[seq], dtype=float)
+        else:
+            pos = t * (len(seq) - 1)
+            idx = min(int(pos), len(seq) - 2)
+            va = np.array(VOWEL_FORMANTS[seq[idx]], dtype=float)
+            vb = np.array(VOWEL_FORMANTS[seq[idx + 1]], dtype=float)
+            fmt = va + (vb - va) * (pos - idx)
+            self._debug(f'vowel: {seq[idx]}..{seq[idx + 1]} '
+                        f'frac {pos - idx:.3f}')
+        k = np.arange(1, max(1, num_samples // 4) + 1)
+        freq = k * VOWEL_F0
+        # fmt columns: center Hz, level dB, bandwidth Hz
+        filt = VOWEL_FLOOR + (
+            10 ** (fmt[:, 1:2] / 20)
+            * np.exp(-0.5 * ((freq - fmt[:, 0:1]) / fmt[:, 2:3]) ** 2)
+        ).sum(axis=0)
+        spectrum = np.zeros(num_samples // 2 + 1, dtype=complex)
+        # the source is a glottal ramp, so every harmonic keeps the phase
+        # it has in the ascending saw
+        spectrum[k] = 1j * (filt / k) * (num_samples / 2)
+        return np.fft.irfft(spectrum, num_samples)
 
     def _saw_harm_frame(self, t, num_samples):
         """

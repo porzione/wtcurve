@@ -24,6 +24,12 @@ Be warned that curvature on its own is close to inaudible as a morph. Bending a 
 
 ![Saw RC morph](images/saw_rc_anim.gif "Saw RC morph")
 
+### Vowel formants
+
+`--vowel SEQ` generates a vowel wavetable instead of a curve or saw: a `1/k` glottal source shaped by five Gaussian formant bumps, the classic tenor set from the CSound manual. `SEQ` is a sequence from `aeiou` - `--vowel aeiou` sweeps through all five, `--vowel ao` morphs between two, a single letter holds one vowel still, and letters may repeat (`aoa` comes back). The wavetable position interpolates formant frequencies, levels and bandwidths between neighbouring vowels, so the segment boundaries are the pure vowels and everything between is a diphthong glide. Formants are absolute frequencies and a wavetable has none, so they are mapped onto harmonics of a 110 Hz reference: the `a` frame peaks on harmonics 6 and 10 - 650 and 1080 Hz, where a tenor puts them - and played higher every formant scales up with the pitch, which reads as a shrinking head. A -40 dB source floor keeps the fundamental present, 24 to 30 dB under the strongest harmonic across the set, and the vowels stay well apart - 10 to 18 dB RMS of log-spectral distance between any pair. The table drifts 4.2 dB of RMS across `aeiou`, so pair it with `--rms`. Filters and shapers still apply: `--vowel aeiou --fold 2` folds the voice.
+
+![Vowel morph](images/vowel_aeiou_anim.gif "Five tenor vowels swept across the table")
+
 ### Morphing any parameter
 
 `--morph NAME,START,END[,lin|log]` sweeps a parameter across the wavetable instead of holding it at one value: `START` in the first waveform, `END` in the last. When that parameter carries a value - given explicitly, or by default as `-e`, `-m` and `-o` always are - and the value falls between the two ends, it lands in the **middle** waveform, so the table travels from one extreme through the waveform the rest of the command line describes to the other extreme. Without one the sweep is a plain line from start to end. Add `,log` for a geometric sweep, which is what a harmonic count, a filter width or any other ratio-like quantity wants - a linear sweep of `1..512` harmonics spends most of the table above harmonic 250 and sounds like it. Like the Bézier multiplier, morph ranges are deliberately unchecked: extremes are allowed to distort, and an exponent swept past about ±700 overflows into NaN frames.
@@ -93,9 +99,9 @@ usage: wtcurve.py [-h] [-D] [-w NUM_WAVEFORMS]
                   [-s {16,32,64,128,256,512,1024,2048,4096}] [--16]
                   [-m MID_WIDTH_PCT] [-o MID_YOFFSET] [-e {2,3,4,5,6,7,8,9}]
                   [--tanh TANH] [-B BEZIER] [-L]
-                  [--saw {ramp,harm,skew,pow,rc}] [--sine] [--fold FOLD]
-                  [--foldbias FOLDBIAS] [--harmonics HARMONICS] [--neg NEG]
-                  [--sat SAT] [--satbias SATBIAS]
+                  [--saw {ramp,harm,skew,pow,rc}] [--vowel SEQ] [--sine]
+                  [--fold FOLD] [--foldbias FOLDBIAS] [--harmonics HARMONICS]
+                  [--neg NEG] [--sat SAT] [--satbias SATBIAS]
                   [--morph NAME,START,END[,lin|log]] [--rev] [--shift SHIFT]
                   [--norm NORM] [--rms] [--savgol SAVGOL] [--gauss GAUSS]
                   [--bitcrush BITCRUSH] [--graph] [--graph3d] [--png] [--wav]
@@ -125,6 +131,9 @@ Waveform options:
                         skew morphs reverse saw to saw through triangle, pow
                         and rc morph the ramp curvature from linear to power-
                         bent or RC capacitor charge shaped
+  --vowel SEQ           Morphing vowel wavetable: a sequence from aeiou, e.g.
+                        aeiou or ao; tenor formants interpolate across the
+                        table, mapped onto harmonics of a 110 Hz fundamental
   --sine                Sine in every frame, a still carrier like --saw ramp
                         whose motion comes from --morph alone; the carrier a
                         wavefolder wants

@@ -26,6 +26,17 @@ def tuple_2int(value):
 #     except:
 #         raise ArgumentTypeError("Invalid tuple argument")
 
+def vowel_seq(value):
+    """
+    parse a --vowel argument: a sequence of vowels, like aeiou
+    """
+    seq = value.strip().lower()
+    if not seq or any(ch not in 'aeiou' for ch in seq):
+        raise ArgumentTypeError(
+            f"--vowel takes a sequence of vowels from aeiou, got '{value}'")
+    return seq
+
+
 def restricted_float1(n):
     n = float(n)
     if n <= 0 or n >= 1.0:
@@ -147,6 +158,12 @@ def setup_parser():
                                      "to saw through triangle, pow and rc morph the "
                                      "ramp curvature from linear to power-bent "
                                      "or RC capacitor charge shaped")
+    waveform_group.add_argument("--vowel", dest="vowel", type=vowel_seq,
+                                metavar="SEQ",
+                                help="Morphing vowel wavetable: a sequence from "
+                                     "aeiou, e.g. aeiou or ao; tenor formants "
+                                     "interpolate across the table, mapped onto "
+                                     "harmonics of a 110 Hz fundamental")
     waveform_group.add_argument("--sine", action='store_true', dest="sine",
                                 help="Sine in every frame, a still carrier like "
                                      "--saw ramp whose motion comes from --morph "

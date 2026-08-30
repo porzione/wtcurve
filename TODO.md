@@ -14,6 +14,11 @@ payoff for effort.
   `--sine`, which is independently useful under `--neg`, `--sat` and
   `--harmonics`. Measured: `--sine --fold 3 --morph fold,1,6` moves the
   centroid 4.2 octaves; bias 0.5 at fold 3 takes even-to-odd from 0 to 0.73.
+- **`--vowel SEQ`** - vowel formant wavetable: a `1/k` glottal source shaped
+  by five Gaussian formant bumps, the CSound manual tenor set, interpolated
+  across the sequence; formants map onto harmonics of a 110 Hz reference.
+  Measured: the `a` frame peaks on harmonics 6 and 10 (650/1080 Hz), vowel
+  pairs sit 10-18 dB RMS apart in log spectrum, `aeiou` drifts 4.2 dB RMS.
 
 ## Next
 
@@ -30,11 +35,6 @@ payoff for effort.
   cycle stays continuous; sweep `k`, fractional allowed. Filter resonance
   sweep without a filter - the PPG/Casio trick, the sound wavetables are
   bought for. The window is a saw, so it fits the saw-family dispatch.
-- **Vowel formants** (`--vowel aeiou`) - build the spectrum directly: a `1/k`
-  source series times two or three Gaussian formant bumps, irfft back; the
-  morph interpolates formant frequencies between vowels across the table.
-  Needs a vowel formant table and a sequence parser; the frame math is just
-  shaped magnitudes.
 - **Even/odd balance** (`--even X`, morphable post-process) - scale the
   even-numbered harmonics in the spectrum (the rfft plumbing exists in
   `_band_limit`). At 0 a saw goes hollow and square-like, at 1 full series;
