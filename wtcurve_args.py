@@ -3,7 +3,28 @@
 
 """ helper for cli arguments """
 
+import types
 from argparse import ArgumentParser, ArgumentTypeError
+
+
+def namespace_from(argp, args):
+    """
+    parser defaults overlaid with a dict of overrides, for programmatic
+    callers like gen_n_tag; unknown keys raise instead of silently
+    generating with defaults
+    """
+    values = {}
+    for action in argp._actions:  # pylint: disable=protected-access
+        if hasattr(action, 'dest'):
+            if action.dest in args:
+                values[action.dest] = args[action.dest]
+            elif hasattr(action, 'default'):
+                values[action.dest] = action.default
+    unknown = set(args) - set(values)
+    if unknown:
+        raise ValueError(f'unknown argument(s): {", ".join(sorted(unknown))}')
+    return types.SimpleNamespace(**values)
+
 
 def tuple_2int(value):
     """
@@ -16,15 +37,6 @@ def tuple_2int(value):
         return tuple(items)
     except Exception as exc:
         raise ArgumentTypeError("Invalid tuple argument") from exc
-
-# def tuple_2float(value):
-#     try:
-#         items = [float(x) for x in value.split(",")]
-#         if len(items) != 2:
-#             raise ArgumentTypeError("Tuple argument must contain 2 floats separated by a comma")
-#         return tuple(items)
-#     except:
-#         raise ArgumentTypeError("Invalid tuple argument")
 
 def vowel_seq(value):
     """

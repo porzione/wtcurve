@@ -52,9 +52,6 @@ class Wt:
 
         self.bitwidth = bitwidth
         self.normalize = True
-        # print(f'Wav waveforms: {self.num_waveforms}, '
-        #       f'samples: {self.num_samples}')
-
 
     def set_normalize(self, is_required):
         self.normalize = bool(is_required)
@@ -62,26 +59,32 @@ class Wt:
     def _normalized(self):
         return normalize(self.wf) if self.normalize else self.wf
 
+    @staticmethod
+    def _exists(fn):
+        """ refuse to overwrite: precious wavetables live out there """
+        if os.path.exists(fn):
+            print_err(f'File "{fn}" exists')
+            return True
+        return False
+
+    def _data(self):
+        """ normalized samples converted to the output dtype """
+        normalized = self._normalized()
+        if self.bitwidth == 32:
+            return normalized.astype(np.float32)
+        return (normalized * 32767).astype(np.int16)
+
     def save_wav(self, fn):
         """
         save WAV wavetable, 16 PCM / 32 float
         https://pysoundfile.readthedocs.io/en/latest/#module-soundfile
         """
 
-        if os.path.exists(fn):
-            print_err(f'File "{fn}" exists')
+        if self._exists(fn):
             return
 
-        normalized = self._normalized()
-
-        if self.bitwidth == 32:
-            data = np.float32(normalized)
-            wav_type = 'FLOAT'
-        else:
-            data = np.int16(normalized * 32767)
-            wav_type = 'PCM_16'
-
-        sf.write(fn, data, WAV_SAMPLE_RATE, wav_type)
+        wav_type = 'FLOAT' if self.bitwidth == 32 else 'PCM_16'
+        sf.write(fn, self._data(), WAV_SAMPLE_RATE, wav_type)
 
     def save_wt(self, fn):
         """
@@ -89,8 +92,7 @@ class Wt:
         https://github.com/surge-synthesizer/surge/blob/main/resources/data/wavetables/WT%20fileformat.txt
         """
 
-        if os.path.exists(fn):
-            print_err(f'File "{fn}" exists')
+        if self._exists(fn):
             return
 
         with open(fn, "wb") as file:
@@ -103,13 +105,7 @@ class Wt:
             flags = 0 if self.bitwidth == 32 else 0x0C
             header[10:12] = struct.pack('<H', flags)
             file.write(header)
-
-            normalized = self._normalized()
-
-            if self.bitwidth == 32:
-                normalized.astype(np.float32).tofile(file)
-            else:
-                (normalized * 32767).astype(np.int16).tofile(file)
+            self._data().tofile(file)
 
     def save_h2p(self, fn):
         """
@@ -118,8 +114,7 @@ class Wt:
         format borrowed from
         https://github.com/harveyormston/osc_gen/blob/main/osc_gen/zosc.py
         """
-        if os.path.exists(fn):
-            print_err(f'File "{fn}" exists')
+        if self._exists(fn):
             return
 
         wf = self._normalized()

@@ -56,9 +56,31 @@ payoff for effort.
 - **Chebyshev stacks** - exact per-harmonic control, but additive plus
   `--even`/`--tilt` cover it more intuitively.
 
+## Structure
+
+Decision from the 2026-08-30 four-angle review: do NOT split wtcurve.py yet.
+The pain of recent features was multi-site registration, not file length,
+and that was fixed in place (single family sentinel, OUTPUTS table, shared
+`namespace_from`). Split when the second remaining family from this file
+lands or wtcurve.py crosses ~850 lines (pylint ceiling is 1000), whichever
+comes first. Boundaries then: `wtdsp.py` (constants, frame families, the
+static shapers - pure code motion), `wtplot.py` (graph/graph3d/gif), while
+`wtcurve.py` keeps its name and the WtCurve class since gen_n_tag.py
+imports it and it is the entry point. Do not extract the morph engine or
+the naming: they are the orchestration itself.
+
 ## Parked
 
 - Duplicate join samples in `_curve_frame` (curve end and middle line start
   share an x): two one-sample flat spots per frame, inaudible. Fixing it
   changes every curve-family output byte-wise, so only worth folding into
   some future change that reshapes the frame anyway.
+- Vectorizing `_bezier_curve`'s loop is ~200x faster but NOT bit-identical
+  (numpy array `**2` vs scalar `pow` differ by 1 ulp on ~10 of 2048 points):
+  needs a deliberate golden-file refresh, not a silent refactor.
+- RIFF chunk unpackers are duplicated between wttag.py and wavchunks.py
+  (same struct formats, same pad-byte fix twice). Sharing is blocked by
+  wavchunks.py executing at import time - give it a main guard first.
+- A shapers registry (flag + MORPHABLE entry + suffix tag in one row) only
+  pays for itself when a sixth shaper lands (`--even` is the candidate);
+  the apply order in `_post_process` must stay explicit either way.

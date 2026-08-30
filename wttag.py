@@ -5,11 +5,11 @@
 """ tag WAV wavetables with clm/surge/u-he chunks for synth compatibility """
 
 from argparse import ArgumentParser
-import types
 import struct
 import os
 import sys
 import numpy as np
+from wtcurve_args import namespace_from
 
 
 TAGS = {
@@ -90,18 +90,8 @@ class Tagger:
         self.argp = setup_parser()
         if args is None:
             self.a = self.argp.parse_args()
-            return
-
-        args_dict = {}
-        for action in self.argp._actions: # pylint: disable=protected-access
-            if hasattr(action, 'dest'):
-                dest = action.dest
-                if dest in args:
-                    args_dict[dest] = args[dest]
-                elif hasattr(action, 'default'):
-                    args_dict[dest] = action.default
-
-        self.a = types.SimpleNamespace(**args_dict)
+        else:
+            self.a = namespace_from(self.argp, args)
 
     def _prepare(self):
 
