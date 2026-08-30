@@ -204,8 +204,19 @@ class WtCurve:
             self.fname_prefix = (f'{self.a.mid_width_pct}m_'
                                  f'{self.a.mid_yoffset:0{ywidth}d}h_')
 
-        if self.a.savgol and self.a.savgol[0] not in range(1, 100):
-            raise ValueError('savgol window should be in range 1-100%')
+        if self.a.savgol:
+            if self.a.savgol[0] not in range(1, 100):
+                raise ValueError('savgol window should be in range 1-99%')
+            sizes = [self.a.num_samples]
+            if self.a.h2p:
+                sizes.append(wtfile.H2P_NUM_SAMPLES)
+            for size in sizes:
+                wlen = int(size / 100 * self.a.savgol[0])
+                if wlen <= self.a.savgol[1]:
+                    raise ValueError(
+                        f'savgol window of {self.a.savgol[0]}% is {wlen} of '
+                        f'{size} samples and must exceed polyorder '
+                        f'{self.a.savgol[1]}')
 
         self._harm_csums = {}
         self.mid_yoffset = self.a.mid_yoffset * 0.01
@@ -249,6 +260,10 @@ class WtCurve:
         return y_values
 
     def _tanh_curve(self, x1, y1, x2, y2, num_points):
+        if num_points == 0:
+            # -m 100 shrinks the curves to nothing at t=1, where x1 == x2
+            # would put a zero in the scale denominator
+            return np.zeros(0)
         if abs(self.a.tanh) < 1e-6:
             # the tanh->0 limit is a straight line; --morph tanh can cross
             # zero, where the scale below divides by zero

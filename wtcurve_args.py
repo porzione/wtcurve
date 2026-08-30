@@ -112,7 +112,8 @@ def setup_parser():
     waveform_group = argp.add_argument_group("Waveform options")
     waveform_group.add_argument("-w", dest="num_waveforms", type=int,
                                 default=defaults['num_waveforms'],
-                                help="Number of waveforms (default: %(default)s)")
+                                help="Number of waveforms; 1 renders the last, "
+                                     "fully morphed frame (default: %(default)s)")
     waveform_group.add_argument(
         "-s", dest="num_samples", type=int,
         choices=[2**i for i in range(4, 13)], default=defaults['num_samples'],
@@ -154,7 +155,8 @@ def setup_parser():
     waveform_group.add_argument("--sat", dest="sat", type=float,
                                 help="Drive the waveform through tanh, e.g. 1.26; the "
                                      "asymmetric soft clipping of an analog oscillator "
-                                     "stage when paired with --satbias; morphable")
+                                     "stage when paired with --satbias; zero or less "
+                                     "disables it, mid-morph frames included; morphable")
     waveform_group.add_argument("--satbias", dest="satbias", type=float,
                                 help="Offset fed into --sat, e.g. 0.63, which compresses "
                                      "one half of the waveform more than the other; DC is "

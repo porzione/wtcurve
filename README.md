@@ -26,7 +26,7 @@ Be warned that curvature on its own is close to inaudible as a morph. Bending a 
 
 ### Morphing any parameter
 
-`--morph NAME,START,END[,lin|log]` sweeps a parameter across the wavetable instead of holding it at one value: `START` in the first waveform, `END` in the last. When that parameter carries a value - given explicitly, or by default as `-e`, `-m` and `-o` always are - and the value falls between the two ends, it lands in the **middle** waveform, so the table travels from one extreme through the waveform the rest of the command line describes to the other extreme. Without one the sweep is a plain line from start to end. Add `,log` for a geometric sweep, which is what a harmonic count, a filter width or any other ratio-like quantity wants - a linear sweep of `1..512` harmonics spends most of the table above harmonic 250 and sounds like it.
+`--morph NAME,START,END[,lin|log]` sweeps a parameter across the wavetable instead of holding it at one value: `START` in the first waveform, `END` in the last. When that parameter carries a value - given explicitly, or by default as `-e`, `-m` and `-o` always are - and the value falls between the two ends, it lands in the **middle** waveform, so the table travels from one extreme through the waveform the rest of the command line describes to the other extreme. Without one the sweep is a plain line from start to end. Add `,log` for a geometric sweep, which is what a harmonic count, a filter width or any other ratio-like quantity wants - a linear sweep of `1..512` harmonics spends most of the table above harmonic 250 and sounds like it. Like the Bézier multiplier, morph ranges are deliberately unchecked: extremes are allowed to distort, and an exponent swept past about ±700 overflows into NaN frames.
 
 The flag is repeatable, so several parameters can move at once, and it accepts the same names the flags use: `e`, `B`, `tanh`, `m`, `o`, `gauss`, `bitcrush`, `harmonics`, `neg`, `sat`, `satbias`.
 
@@ -102,7 +102,8 @@ options:
   -D                    Print a lot of debug messages
 
 Waveform options:
-  -w NUM_WAVEFORMS      Number of waveforms (default: 256)
+  -w NUM_WAVEFORMS      Number of waveforms; 1 renders the last, fully morphed
+                        frame (default: 256)
   -s {16,32,64,128,256,512,1024,2048,4096}
                         Number of samples in waveform (default: 2048)
   --16                  Make 16-bit wavetable (default: 32)
@@ -127,7 +128,8 @@ Waveform options:
                         and the peak restored afterwards; morphable
   --sat SAT             Drive the waveform through tanh, e.g. 1.26; the
                         asymmetric soft clipping of an analog oscillator stage
-                        when paired with --satbias; morphable
+                        when paired with --satbias; zero or less disables it,
+                        mid-morph frames included; morphable
   --satbias SATBIAS     Offset fed into --sat, e.g. 0.63, which compresses one
                         half of the waveform more than the other; DC is
                         removed afterwards; morphable
