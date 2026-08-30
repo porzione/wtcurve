@@ -460,8 +460,8 @@ class WtCurve:
 
         Peak normalization makes the wavetable position part volume control: a
         sine and a saw of the same peak differ by 2.8 dB of RMS, and every table
-        measured so far drifts across its sweep - 2.9 dB for the power morph,
-        3.5 for RC, 3.8 for the saturation-bias one, which is enough to hear as
+        measured so far drifts across its sweep - 4.8 dB for the power morph,
+        7.3 for RC, 3.8 for the saturation-bias one, which is enough to hear as
         a fade rather than as a timbre change. Equalizing RMS is what leaves
         only the timbre moving.
 

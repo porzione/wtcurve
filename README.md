@@ -2,9 +2,9 @@
 
 ## wtcurve
 
-wtcurve can generate symmetric waveforms using the exponential function by default, hyperbolic tangent `--tanh` or bezier curve `-B`. The waveform contains of a linear central part with adjustable width, which can be set in percentages using the `-m` option. The script can also plot the graph with the first and last frame, 3D graph with the full wavetable or animated gif.
+wtcurve can generate symmetric waveforms using the exponential function by default, hyperbolic tangent `--tanh` or bezier curve `-B`. The waveform consists of a linear central part with adjustable width, which can be set in percentages using the `-m` option. The script can also plot the graph with the first and last frame, 3D graph with the full wavetable or animated gif.
 
-By manipulating parameters such as Savitzky-Golay `--savgol`, Gaussian filter `--gauss`, bitcrush `--bitcrush`  and direct line `-L`, a wide range of waveforms can be achieved. The `-o` option adjusts the offset of the start and end points of the middle section, shifting them along the y-axis (amplitude). Bezier will distort and clip the waveform when values fall outside the range of -9 to 4. The intentional omission of the range check provides greater freedom for experimentation. However, it's important to note that many combinations of argument values may result in an invalid waveform.
+By manipulating parameters such as Savitzky-Golay `--savgol`, Gaussian filter `--gauss`, bitcrush `--bitcrush`  and direct line `-L`, a wide range of waveforms can be achieved. The `-o` option adjusts the offset of the start and end points of the middle section, shifting them along the y-axis (amplitude). Bezier will distort and clip the waveform when values fall outside the range of -9 to 4. Note that with `-o 0` the `-B` value has no effect at all: the control point height is the offset scaled by the multiplier, so a zero offset pins it to the axis no matter what `-B` says. The intentional omission of the range check provides greater freedom for experimentation. However, it's important to note that many combinations of argument values may result in an invalid waveform.
 
 `gen_n_tag.py` is a sample script demonstrating how to programmatically generate multiple wavetables, note that destination paths are hard-coded.
 
@@ -26,13 +26,13 @@ Be warned that curvature on its own is close to inaudible as a morph. Bending a 
 
 ### Morphing any parameter
 
-`--morph NAME,START,END[,lin|log]` sweeps a parameter across the wavetable instead of holding it at one value: `START` in the first waveform, `END` in the last. When the flag that parameter belongs to is also given, and its value falls between the two ends, that value lands in the **middle** waveform, so the table travels from one extreme through the waveform the rest of the command line describes to the other extreme. Without it the sweep is a plain line from start to end. Add `,log` for a geometric sweep, which is what a harmonic count, a filter width or any other ratio-like quantity wants - a linear sweep of `1..512` harmonics spends most of the table above harmonic 250 and sounds like it.
+`--morph NAME,START,END[,lin|log]` sweeps a parameter across the wavetable instead of holding it at one value: `START` in the first waveform, `END` in the last. When that parameter carries a value - given explicitly, or by default as `-e`, `-m` and `-o` always are - and the value falls between the two ends, it lands in the **middle** waveform, so the table travels from one extreme through the waveform the rest of the command line describes to the other extreme. Without one the sweep is a plain line from start to end. Add `,log` for a geometric sweep, which is what a harmonic count, a filter width or any other ratio-like quantity wants - a linear sweep of `1..512` harmonics spends most of the table above harmonic 250 and sounds like it.
 
-The flag is repeatable, so several parameters can move at once, and it accepts the same names the flags use: `e`, `B`, `tanh`, `m`, `o`, `gauss`, `bitcrush`, `harmonics`, `neg`.
+The flag is repeatable, so several parameters can move at once, and it accepts the same names the flags use: `e`, `B`, `tanh`, `m`, `o`, `gauss`, `bitcrush`, `harmonics`, `neg`, `sat`, `satbias`.
 
-Two of those parameters exist mainly to be morphed:
+Several of those parameters exist mainly to be morphed:
 
-`--harmonics N` band-limits every waveform to the first `N` harmonics. Applied to a fixed waveform it is a low-pass; swept, it is the brightness axis that curvature morphs lack, and it can be laid over any of them: `--saw pow --harmonics 32 --morph harmonics,1,512,log` keeps the bent shape in every frame while the table opens from a sine to the full saw, with the 32-harmonic version in the middle.
+`--harmonics N` band-limits every waveform to the first `N` harmonics; `0` keeps nothing but DC, i.e. silence. Applied to a fixed waveform it is a low-pass; swept, it is the brightness axis that curvature morphs lack, and it can be laid over any of them: `--saw pow --harmonics 32 --morph harmonics,1,512,log` keeps the bent shape in every frame while the table opens from a sine to the full saw, with the 32-harmonic version in the middle.
 
 `--sat DRIVE` and `--satbias BIAS` drive the waveform through `tanh(DRIVE * y + BIAS)` and re-centre it. The bias is the half that matters: without it the curve is symmetric and the result is only a quieter waveform, while with it one half of the waveform compresses and the other does not, which is what an analog oscillator's buffer stage does to a ramp. `--saw ramp --sat 1.257 --satbias 0.625` reproduces a captured hardware saw to a correlation of 0.9935 and a spectral error of 0.62 dB over 64 harmonics, against 1.81 dB for an ideal saw. Both are morphable, but note that a saw driven hard enough becomes a square - at `--sat 8` the waveform correlates 0.96 with one - so sweep the bias, or sweep `--harmonics` and leave the drive where it sounds right.
 
@@ -46,7 +46,7 @@ Two of those parameters exist mainly to be morphed:
 
 ### File names
 
-Output file names encode the parameters: `90m_25h_5e.wav` means middle part width 90% (`-m`), y-offset 25% (`-o`), exponential curve with exponent 5 (`-e`); `F4ht` is tanh 4.0, `F-7bz` is Bezier -7.0, `dl` is direct line. Filter and transform suffixes: `_sg` savgol, `_ga` gauss, `_bc` bitcrush, `_rev` reverse, `_sh` shift, `_no` normalize, `_rms` equal-RMS normalize, `_hm` harmonics, `_ng` neg. A morphed parameter appends `_mo` with its name and range, e.g. `_moharmonics1-512log`. With `--fullfn`, samples and waveforms counts are appended, e.g. `_2048s_256w`.
+Output file names encode the parameters: `90m_25h_5e.wav` means middle part width 90% (`-m`), y-offset 25% (`-o`), exponential curve with exponent 5 (`-e`); `F4ht` is tanh 4.0, `F-7bz` is Bezier -7.0, `dl` is direct line. Filter and transform suffixes: `_sg` savgol, `_ga` gauss, `_bc` bitcrush, `_rev` reverse, `_sh` shift, `_no` normalize, `_rms` equal-RMS normalize, `_hm` harmonics, `_ng` neg, `_st` sat, `_sb` satbias. A morphed parameter appends `_mo` with its name and range, e.g. `_moharmonics1-512log`. With `--fullfn`, samples and waveforms counts are appended, e.g. `_2048s_256w`.
 
 ### Visuals
 
