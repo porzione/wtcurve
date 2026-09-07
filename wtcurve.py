@@ -621,6 +621,9 @@ class WtCurve:
     @staticmethod
     def _band_limit(y, harmonics):
         """ keep the first n harmonics, drop the rest """
+        if harmonics <= 0:
+            # Even roundoff in the DC bin becomes full-scale on export.
+            return np.zeros_like(y)
         spectrum = np.fft.rfft(y)
         spectrum[harmonics + 1:] = 0
         return np.fft.irfft(spectrum, len(y))
@@ -635,7 +638,7 @@ class WtCurve:
         if self.a.sat is not None and self.a.sat > 0:
             y = self._saturate(y, self.a.sat, self.a.satbias if self.a.satbias is not None else 0.0)
         if self.a.harmonics is not None:
-            # 0, reachable when --morph sweeps down to it, keeps DC only;
+            # 0, reachable when --morph sweeps down to it, means silence;
             # skipping the band-limit there would leave the frame full-bright
             y = self._band_limit(y, max(self.a.harmonics, 0))
         if self.a.savgol:
