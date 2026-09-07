@@ -644,10 +644,11 @@ class WtCurve:
         if self.a.savgol:
             from scipy.signal import savgol_filter  # pylint: disable=import-outside-toplevel
             wlen = int(len(y) / 100 * self.a.savgol[0])
-            y = savgol_filter(y, window_length=wlen, polyorder=self.a.savgol[1])
+            y = savgol_filter(y, window_length=wlen, polyorder=self.a.savgol[1],
+                              mode='wrap')
         if self.a.gauss:
             from scipy.ndimage import gaussian_filter1d  # pylint: disable=import-outside-toplevel
-            y = gaussian_filter1d(y, sigma=self.a.gauss)
+            y = gaussian_filter1d(y, sigma=self.a.gauss, mode='wrap')
         if self.a.bitcrush:
             max_val = 2**(self.a.bitcrush) - 1
             y = np.round(y * max_val) / max_val

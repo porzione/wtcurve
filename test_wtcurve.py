@@ -56,5 +56,20 @@ class SilenceTests(unittest.TestCase):
         np.testing.assert_allclose(rms, rms[0])
 
 
+class SmoothingTests(unittest.TestCase):
+    """Smoothing treats each frame as a repeating cycle."""
+
+    def test_sine_stays_a_single_harmonic(self):
+        for options in ({'gauss': 40}, {'savgol': (51, 3)}):
+            with self.subTest(options=options):
+                data = frames(curve(sine=True, num_samples=2048, **options))[0]
+                spectrum = np.fft.rfft(data)
+                self.assertLess(abs(spectrum[0]), 1e-9)
+                self.assertLess(np.max(np.abs(spectrum[2:])), 1e-9)
+                self.assertGreater(abs(spectrum[1]), 1)
+                self.assertLessEqual(abs(data[0] - data[-1]),
+                                     np.max(np.abs(np.diff(data))) + 1e-12)
+
+
 if __name__ == '__main__':
     unittest.main()
