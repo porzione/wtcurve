@@ -38,6 +38,8 @@ Be warned that curvature on its own is close to inaudible as a morph. Bending a 
 
 The flag is repeatable, so several parameters can move at once, and it accepts the same names the flags use: `e`, `B`, `tanh`, `m`, `o`, `gauss`, `bitcrush`, `harmonics`, `neg`, `sat`, `satbias`, `fold`, `foldbias`.
 
+`--morph B,-7,2` and `--morph tanh,1,4` select their curve family when no family flag is given. These implicit selections sweep straight through without a midpoint anchor; give `-B` or `--tanh` explicitly to set an anchor. Curve morphs (`e`, `B`, `tanh`) cannot be combined with another selected family or with each other; incompatible combinations report an error. The default exponent does not count as an explicit selection, but `-e 5` does.
+
 Several of those parameters exist mainly to be morphed:
 
 `--harmonics N` band-limits every waveform to the first `N` harmonics; `0` produces exact silence, including removal of DC. Applied to a fixed waveform it is a low-pass; swept, it is the brightness axis that curvature morphs lack, and it can be laid over any of them: `--saw pow --harmonics 32 --morph harmonics,1,512,log` keeps the bent shape in every frame while the table opens from a sine to the full saw, with the 32-harmonic version in the middle.

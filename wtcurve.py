@@ -6,7 +6,7 @@
 import subprocess
 import sys
 import numpy as np
-from wtcurve_args import MORPHABLE, SAW_MODES, namespace_from, setup_parser
+from wtcurve_args import MORPHABLE, SAW_MODES, defaults, namespace_from, setup_parser
 import wtfile
 
 # curvature at t=1 for the morphing power/RC sawtooths
@@ -67,6 +67,9 @@ class WtCurve:
             self.a = self.argp.parse_args()
         else:
             self.a = namespace_from(self.argp, args)
+        self._explicit_exp = self.a.exp is not None
+        if self.a.exp is None:
+            self.a.exp = defaults['exponent']
 
     def _debug(self, msg):
         """ debug message helper """
@@ -75,6 +78,7 @@ class WtCurve:
 
     def _prepare_mode(self):
         """ choose the waveform family, its title and file name type """
+        curve_morph = self._curve_morph_family()
         if self.a.saw:
             self.frame_fn = getattr(self, f'_saw_{self.a.saw}_frame')
             self.title = f'Saw {SAW_MODES[self.a.saw]} morph'
@@ -88,14 +92,15 @@ class WtCurve:
             self.frame_fn = self._sine_frame
             self.title = 'Sine'
             self.mtype = 'sine'
-        elif self.a.bezier is not None:
+        elif self.a.bezier is not None or curve_morph == 'B':
             self.curve_fn = self._bezier_curve
-            self.title = f'Bézier {self.a.bezier}'
-            self.mtype = f'F{self.a.bezier:.4g}bz'
-        elif self.a.tanh is not None:
+            self.title = 'Bézier morph' if self.a.bezier is None else f'Bézier {self.a.bezier}'
+            self.mtype = 'bezier' if self.a.bezier is None else f'F{self.a.bezier:.4g}bz'
+        elif self.a.tanh is not None or curve_morph == 'tanh':
             self.curve_fn = self._tanh_curve
-            self.title = f'Hyperbolic tangent {self.a.tanh}'
-            self.mtype = f'F{self.a.tanh:.4g}ht'
+            self.title = ('Hyperbolic tangent morph' if self.a.tanh is None
+                          else f'Hyperbolic tangent {self.a.tanh}')
+            self.mtype = 'tanh' if self.a.tanh is None else f'F{self.a.tanh:.4g}ht'
         elif self.a.dline:
             self.curve_fn = self._line
             self.title = 'Direct line'
@@ -104,6 +109,25 @@ class WtCurve:
             self.curve_fn = self._exp_curve
             self.title = f'Exponent {self.a.exp}'
             self.mtype = f'{self.a.exp}e'
+
+    def _curve_morph_family(self):
+        """Infer an omitted curve selector, rejecting incompatible morphs."""
+        requested = {name for name, *_rest in self.morphs
+                     if name in ('e', 'B', 'tanh')}
+        if not requested:
+            return None
+        if len(requested) > 1:
+            self.argp.error('curve morphs must target a single family: e, B or tanh')
+        family = requested.pop()
+        selectors = [('saw', bool(self.a.saw)), ('vowel', bool(self.a.vowel)),
+                     ('sine', self.a.sine), ('B', self.a.bezier is not None),
+                     ('tanh', self.a.tanh is not None), ('line', self.a.dline),
+                     ('e', self._explicit_exp)]
+        conflicts = [name for name, active in selectors if active and name != family]
+        if conflicts:
+            self.argp.error(f'--morph {family} conflicts with selected family: '
+                            + ', '.join(conflicts))
+        return family
 
     def _prepare_suffix(self):
         """ title and file name parts from filters and transforms """

@@ -10,7 +10,7 @@ import numpy as np
 import soundfile as sf
 
 from wtcurve import WtCurve
-from wtcurve_args import morph_spec
+from wtcurve_args import morph_spec, setup_parser
 from wtfile import Wt
 
 
@@ -23,6 +23,7 @@ def curve(**options):
 
 def frames(table):
     """Generate using the table's configured dimensions."""
+    # pylint: disable=protected-access
     return table._gen_waveforms(table.a.num_waveforms, table.a.num_samples)
 
 
@@ -54,6 +55,43 @@ class SilenceTests(unittest.TestCase):
         self.assertTrue(np.isfinite(data).all())
         rms = np.sqrt(np.mean(data[1:] ** 2, axis=1))
         np.testing.assert_allclose(rms, rms[0])
+
+
+class MorphFamilyTests(unittest.TestCase):
+    """Implicit selectors must activate the requested curve without an anchor."""
+
+    def test_implicit_curve_matches_explicit_unanchored_curve(self):
+        for name, dest, start, end in [('B', 'bezier', -7, 2), ('tanh', 'tanh', 1, 4)]:
+            with self.subTest(name=name):
+                spec = morph_spec(f'{name},{start},{end}')
+                implicit = curve(morph=[spec])
+                explicit = curve(morph=[spec], **{dest: end + 1})
+                self.assertIsNone(implicit.morphs[0][3])
+                np.testing.assert_allclose(frames(implicit), frames(explicit))
+                self.assertFalse(np.allclose(frames(curve()), frames(implicit)))
+
+    def test_conflicting_curve_morphs_fail(self):
+        for options in [{'saw': 'ramp'}, {'sine': True}, {'vowel': 'a'},
+                        {'dline': True}, {'bezier': 1}, {'exp': 5},
+                        {'morph': [morph_spec('B,-7,2'), morph_spec('tanh,1,4')]}]:
+            with self.subTest(options=options), contextlib.redirect_stderr(io.StringIO()):
+                with self.assertRaises(SystemExit) as error:
+                    curve(**{'morph': [morph_spec('tanh,1,4')], **options})
+                self.assertEqual(error.exception.code, 2)
+
+    def test_explicit_value_remains_the_midpoint_anchor(self):
+        table = curve(tanh=2, morph=[morph_spec('tanh,1,4')])
+        self.assertEqual(table.morphs[0][3], 2)
+        np.testing.assert_allclose(frames(table)[2], frames(curve(tanh=2))[2])
+
+    def test_cli_distinguishes_default_and_explicit_exponent(self):
+        parser = setup_parser()
+        options = vars(parser.parse_args(['--wav', '--morph', 'tanh,1,4']))
+        self.assertEqual(WtCurve(options).curve_fn.__name__, '_tanh_curve')
+        options = vars(parser.parse_args(['--wav', '-e', '5', '--morph', 'tanh,1,4']))
+        with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+            WtCurve(options)
+        self.assertEqual(curve().a.exp, 5)
 
 
 class SmoothingTests(unittest.TestCase):

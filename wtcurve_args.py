@@ -154,8 +154,8 @@ def setup_parser():
     waveform_group.add_argument("-o", dest="mid_yoffset", type=int, default=defaults['mid_yoffset'],
                                help="Offset from y-axis in %% (default: %(default)s)")
     waveform_group.add_argument("-e", dest="exp", type=int, choices=range(2, 10),
-                                default=defaults['exponent'],
-                                help="Exponent of curve (default: %(default)s)")
+                                default=None,
+                                help=f"Exponent of curve (default: {defaults['exponent']})")
     waveform_group.add_argument("--tanh", dest="tanh", type=float,
                               help="Hyperbolic float tangent, e.g. 4.0")
     waveform_group.add_argument("-B", dest="bezier", type=float,
