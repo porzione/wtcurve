@@ -643,8 +643,9 @@ class WtCurve:
         saturates, and it does so asymmetrically, so the top of the ramp
         compresses while the bottom stays. tanh(drive * y + bias) with
         drive 1.26 and bias 0.63 reproduces one such captured saw to a
-        correlation of 0.9935, and the bias is the half of it that matters -
-        without it the curve is symmetric and the result is just a quieter saw.
+        correlation of 0.9935. Even without bias, saturation changes the shape
+        and harmonic content. Bias adds asymmetry and can introduce even
+        harmonics into an otherwise half-wave-symmetric waveform.
         """
         return WtCurve._dc_free(np.tanh(drive * y + bias))
 
