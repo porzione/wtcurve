@@ -4,32 +4,13 @@ Waveform families and transforms worth adding. The bar: a shape earns a place
 only if the wavetable position axis does something musical with it. Ordered by
 payoff for effort.
 
-## Done
-
-- **`--fold GAIN` / `--foldbias BIAS`** - triangle wavefolder, the west coast
-  timbre control. A sine driven into the fold at growing gain adds harmonics
-  the characteristic non-monotonic way (partials rise and fall as folds pass
-  through); the bias breaks the symmetry and manufactures even harmonics,
-  same pattern as `--sat`/`--satbias`. Shipped with the still sine carrier
-  `--sine`, which is independently useful under `--neg`, `--sat` and
-  `--harmonics`. Measured: `--sine --fold 3 --morph fold,1,6` moves the
-  centroid 4.2 octaves; bias 0.5 at fold 3 takes even-to-odd from 0 to 0.73.
-- **`--vowel SEQ`** - vowel formant wavetable: a `1/k` glottal source shaped
-  by five Gaussian formant bumps, the CSound manual tenor set, interpolated
-  across the sequence; formants map onto harmonics of a 110 Hz reference.
-  Measured: the `a` frame peaks on harmonics 6 and 10 (650/1080 Hz), vowel
-  pairs sit 10-18 dB RMS apart in log spectrum, `aeiou` drifts 4.2 dB RMS.
-
-## Next
+## Wanted
 
 - **`--fm RATIO`** - single-cycle FM: `sin(2*pi*x + I*sin(2*pi*k*x))`, sweep
   the index `I` from 0 to ~8. The DX brightness envelope frozen into a table;
   `k` picks the flavor: 1 brassy, 2 hollow, 3 metallic. A phase offset on the
   modulator (`--fmbias`) breaks symmetry for even harmonics. Cheap, huge
   range, and unlike pow/rc the centroid genuinely travels.
-
-## Later
-
 - **Windowed sync / CZ resonance** (`--saw reso` or own family) - a cosine at
   k times the frequency, amplitude-windowed by one descending ramp so the
   cycle stays continuous; sweep `k`, fractional allowed. Filter resonance
@@ -58,16 +39,13 @@ payoff for effort.
 
 ## Structure
 
-Decision from the 2026-08-30 four-angle review: do NOT split wtcurve.py yet.
-The pain of recent features was multi-site registration, not file length,
-and that was fixed in place (single family sentinel, OUTPUTS table, shared
-`namespace_from`). Split when the second remaining family from this file
-lands or wtcurve.py crosses ~850 lines (pylint ceiling is 1000), whichever
-comes first. Boundaries then: `wtdsp.py` (constants, frame families, the
-static shapers - pure code motion), `wtplot.py` (graph/graph3d/gif), while
-`wtcurve.py` keeps its name and the WtCurve class since gen_n_tag.py
-imports it and it is the entry point. Do not extract the morph engine or
-the naming: they are the orchestration itself.
+Do NOT split wtcurve.py yet: the pain of recent features was multi-site
+registration, not file length, and that was fixed in place. Revisit when
+another family lands or the file crosses ~850 lines (pylint ceiling 1000);
+the seams then are `wtdsp.py` (constants, frame families, static shapers)
+and `wtplot.py` (graph/graph3d/gif), with WtCurve staying in wtcurve.py as
+the entry point. The morph engine and the naming are the orchestration -
+they do not move.
 
 ## Parked
 
