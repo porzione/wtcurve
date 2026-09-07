@@ -84,6 +84,15 @@ class MorphFamilyTests(unittest.TestCase):
         self.assertEqual(table.morphs[0][3], 2)
         np.testing.assert_allclose(frames(table)[2], frames(curve(tanh=2))[2])
 
+    def test_default_exponent_does_not_anchor_its_morph(self):
+        spec = morph_spec('e,2,9')
+        implicit = curve(morph=[spec])
+        self.assertIsNone(implicit.morphs[0][3])
+        self.assertEqual(implicit.title.split(' e:')[0], 'Exponent morph')
+        self.assertEqual(curve(exp=5, morph=[spec]).morphs[0][3], 5)
+        # an unanchored sweep is not the same table as one anchored on 5
+        self.assertFalse(np.allclose(frames(implicit), frames(curve(exp=5, morph=[spec]))))
+
     def test_cli_distinguishes_default_and_explicit_exponent(self):
         parser = setup_parser()
         options = vars(parser.parse_args(['--wav', '--morph', 'tanh,1,4']))

@@ -107,7 +107,8 @@ class WtCurve:
             self.mtype = 'dl'
         else:
             self.curve_fn = self._exp_curve
-            self.title = f'Exponent {self.a.exp}'
+            self.title = ('Exponent morph' if curve_morph == 'e' and not self._explicit_exp
+                          else f'Exponent {self.a.exp}')
             self.mtype = f'{self.a.exp}e'
 
     def _curve_morph_family(self):
@@ -180,6 +181,9 @@ class WtCurve:
             if not hasattr(self.a, dest):
                 raise ValueError(f'--morph {name}: parser has no dest {dest}')
             base = getattr(self.a, dest)
+            if dest == 'exp' and not self._explicit_exp:
+                # the default exponent is not a choice, so nothing to anchor on
+                base = None
             if curve == 'log' and base is not None and base <= 0:
                 base = None
             if base is not None and base in (start, end):
