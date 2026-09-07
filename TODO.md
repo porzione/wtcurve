@@ -51,8 +51,7 @@ they do not move.
 `test_wtcurve.py` (unittest, `python -m pytest test_wtcurve.py`) covers the
 regressions fixed so far: silence at zero harmonics, periodic smoothing,
 implicit curve families and their anchors, tanh stability. Every new family
-or shaper should add a case there. CI still runs only pylint; adding the
-tests to the workflow is the next cheap win.
+or shaper should add a case there; CI runs them after pylint.
 
 ## Parked
 
