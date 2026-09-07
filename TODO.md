@@ -41,11 +41,18 @@ payoff for effort.
 
 Do NOT split wtcurve.py yet: the pain of recent features was multi-site
 registration, not file length, and that was fixed in place. Revisit when
-another family lands or the file crosses ~850 lines (pylint ceiling 1000);
+another family lands or the file crosses ~850 lines (730 as of 2026-09-07,
+pylint ceiling 1000);
 the seams then are `wtdsp.py` (constants, frame families, static shapers)
 and `wtplot.py` (graph/graph3d/gif), with WtCurve staying in wtcurve.py as
 the entry point. The morph engine and the naming are the orchestration -
 they do not move.
+
+`test_wtcurve.py` (unittest, `python -m pytest test_wtcurve.py`) covers the
+regressions fixed so far: silence at zero harmonics, periodic smoothing,
+implicit curve families and their anchors, tanh stability. Every new family
+or shaper should add a case there. CI still runs only pylint; adding the
+tests to the workflow is the next cheap win.
 
 ## Parked
 
