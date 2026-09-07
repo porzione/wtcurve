@@ -38,7 +38,7 @@ Be warned that curvature on its own is close to inaudible as a morph. Bending a 
 
 The flag is repeatable, so several parameters can move at once, and it accepts the same names the flags use: `e`, `B`, `tanh`, `m`, `o`, `gauss`, `bitcrush`, `harmonics`, `neg`, `sat`, `satbias`, `fold`, `foldbias`.
 
-`--morph B,-7,2` and `--morph tanh,1,4` select their curve family when no family flag is given. These implicit selections sweep straight through without a midpoint anchor; give `-B` or `--tanh` explicitly to set an anchor. Curve morphs (`e`, `B`, `tanh`) cannot be combined with another selected family or with each other; incompatible combinations report an error. The default exponent does not count as an explicit selection, but `-e 5` does.
+`--morph B,-7,2` and `--morph tanh,1,4` select their curve family when no family flag is given. These implicit selections sweep straight through without a midpoint anchor; give `-B` or `--tanh` explicitly to set an anchor. Curve morphs (`e`, `B`, `tanh`) cannot be combined with another selected family or with each other; incompatible combinations report an error. The default exponent does not count as an explicit selection, but `-e 5` does, so `--morph e,2,9` on its own also sweeps straight through. The tanh rate's sign is ignored, a negative rate gives the same curve as the positive one, so a sweep such as `--morph tanh,-40,40` bounces off the straight line in the middle instead of passing through it.
 
 Several of those parameters exist mainly to be morphed:
 
