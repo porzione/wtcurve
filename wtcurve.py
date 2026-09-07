@@ -281,15 +281,21 @@ class WtCurve:
             # -m 100 shrinks the curves to nothing at t=1, where x1 == x2
             # would put a zero in the scale denominator
             return np.zeros(0)
-        if abs(self.a.tanh) < EPS:
+        if abs(self.a.tanh) < EPS or x1 == x2:
             # the tanh->0 limit is a straight line; --morph tanh can cross
             # zero, where the scale below divides by zero
             return self._line(x1, y1, x2, y2, num_points)
         x = np.linspace(x1, x2, num_points)
-        scale = (y2 - y1) / (np.tanh(x2 * self.a.tanh) - np.tanh(x1 * self.a.tanh))
-        translation = y1 - scale * np.tanh(x1 * self.a.tanh)
-        y = scale * np.tanh(x * self.a.tanh) + translation
-        return y
+        rate = abs(self.a.tanh)
+        # (tanh(rate*x) - tanh(rate*x1)) / (tanh(rate*x2) - tanh(rate*x1))
+        # = sinh(rate*(x-x1))/sinh(rate*(x2-x1)) * cosh(rate*x2)/cosh(rate*x).
+        # Combine the growing exponentials analytically; only decaying ones
+        # remain. expm1 retains precision near the start and at small rates.
+        decay = np.exp(2 * rate * (np.minimum(x, 0) - min(x2, 0)))
+        rise = np.expm1(-2 * rate * (x - x1)) / np.expm1(-2 * rate * (x2 - x1))
+        cosh_ratio = ((1 + np.exp(-2 * rate * abs(x2)))
+                      / (1 + np.exp(-2 * rate * np.abs(x))))
+        return y1 + (y2 - y1) * decay * rise * cosh_ratio
 
     def _line(self, x1, y1, x2, y2, num_points):
         """ just direct line """

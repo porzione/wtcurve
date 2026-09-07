@@ -94,6 +94,39 @@ class MorphFamilyTests(unittest.TestCase):
         self.assertEqual(curve().a.exp, 5)
 
 
+class TanhTests(unittest.TestCase):
+    """Endpoint scaling must remain finite when tanh itself saturates."""
+
+    def test_large_rates_are_finite_and_keep_endpoints(self):
+        for rate in (40, -40, 1000, -1000, 1e6):
+            for width in (0, 90, 100):
+                with self.subTest(rate=rate, width=width), np.errstate(all='raise',
+                                                                     under='ignore'):
+                    data = frames(curve(tanh=rate, mid_width_pct=width,
+                                        num_samples=2048, num_waveforms=256))
+                    self.assertTrue(np.isfinite(data).all())
+                    self.assertLessEqual(np.abs(data).max(), 1)
+                    # At width 100 the last frame consists only of the middle line.
+                    np.testing.assert_allclose(data[:-1, 0], -1)
+                    np.testing.assert_allclose(data[:-1, -1], 1)
+
+    def test_matches_direct_formula_at_ordinary_rates(self):
+        for rate in (-4, -0.1, 0.1, 4):
+            table = curve(tanh=rate)
+            for start, end in ((-1, -0.9), (0.9, 1), (-1, 1)):
+                with self.subTest(rate=rate, interval=(start, end)):
+                    x = np.linspace(start, end, 128)
+                    expected = -1 + 2 * ((np.tanh(rate * x) - np.tanh(rate * start))
+                                        / (np.tanh(rate * end) - np.tanh(rate * start)))
+                    actual = table._tanh_curve(start, -1, end, 1, 128)  # pylint: disable=protected-access
+                    np.testing.assert_allclose(actual, expected, atol=1e-12)
+
+    def test_zero_crossing_has_linear_middle_frame(self):
+        data = frames(curve(tanh=0, morph=[morph_spec('tanh,-40,40')]))
+        self.assertTrue(np.isfinite(data).all())
+        np.testing.assert_allclose(data[2], frames(curve(dline=True))[2])
+
+
 class SmoothingTests(unittest.TestCase):
     """Smoothing treats each frame as a repeating cycle."""
 
